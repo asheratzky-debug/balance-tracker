@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>מעקב יתרות חודשי</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; transition: background 0.3s; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: background 0.3s, color 0.3s; }
+        input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+
+        /* Dark mode */
+        .dark .gradient-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+        .dark .card { background: rgba(30,30,50,0.95); color: #e0e0e0; }
+        .dark .card h2, .dark .card h3 { color: #f0f0f0; }
+        .dark .card input, .dark .card textarea { background: #2a2a4a; border-color: #3a3a5a; color: #e0e0e0; }
+        .dark .card input::placeholder, .dark .card textarea::placeholder { color: #888; }
+        .dark .card .text-gray-500 { color: #aaa; }
+        .dark .card .text-gray-600 { color: #999; }
+        .dark .card .text-gray-700 { color: #ccc; }
+        .dark .card .text-gray-800 { color: #e0e0e0; }
+        .dark .card .border-gray-200 { border-color: #3a3a5a; }
+        .dark .card tr:hover { background: rgba(255,255,255,0.05); }
+        .dark .card .bg-purple-50, .dark .card .bg-green-50, .dark .card .bg-blue-50,
+        .dark .card .bg-emerald-50, .dark .card .bg-red-50, .dark .card .bg-amber-50,
+        .dark .card .bg-yellow-50, .dark .card .bg-cyan-50 { background: rgba(255,255,255,0.05); }
+        .dark #editModal > div, .dark #deleteModal > div, .dark #noteModal > div { background: #2a2a4a; color: #e0e0e0; }
+
+        .ai-insight { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .note-badge { font-size: 10px; }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex gap-2">
+                <a href="portfolio.html" class="bg-white/20 hover:bg-white/30 text-white px-4 py-3 rounded-xl transition-all flex items-center gap-2 font-medium">
+                    💼 תיק נכסים
+                </a>
+                <button onclick="openAnnualReports()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-3 rounded-xl transition-all flex items-center gap-2 font-medium">
+                    📊 דוחות שנתיים
+                </button>
+            </div>
+            <div class="text-center flex-1">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">מעקב יתרות חודשי</h1>
+                <p class="text-white/80">הכל נשמר רק במחשב שלך</p>
+            </div>
+            <button id="darkModeBtn" onclick="toggleDarkMode()" class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-xl transition-all" title="מצב כהה">
+                <span id="darkModeIcon">🌙</span>
+            </button>
+        </div>
+
+        <div class="card rounded-2xl shadow-xl p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">גרף יתרות</h2>
+            <div class="relative" style="height: 300px;">
+                <canvas id="balanceChart"></canvas>
+            </div>
+            <div id="noDataChart" class="text-center text-gray-400 py-12">
+                <div class="text-5xl mb-2">📈</div>
+                <p>הוסף נתונים כדי לראות את הגרף</p>
+            </div>
+        </div>
+
+        <div id="aiInsightsCard" class="card rounded-2xl shadow-xl p-6 mb-6 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">🤖 תובנות חכמות</h2>
+            <div id="aiInsightsContent" class="space-y-3"></div>
+        </div>
+
+        <div id="insightsCard" class="card rounded-2xl shadow-xl p-6 mb-6 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">סטטיסטיקות</h2>
+                <button onclick="openYearlyStats()" class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-purple-600 hover:to-indigo-600 transition-all">
+                    📊 נתונים שנתיים
+                </button>
+            </div>
+            <div id="insightsContent" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </div>
+
+        <div class="card rounded-2xl shadow-xl p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">הוספת יתרה</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">חודש</label>
+                    <input type="month" id="monthInput" class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">סכום (₪)</label>
+                    <input type="number" id="amountInput" placeholder="הזן סכום" step="0.01" class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2">הערה (אופציונלי)</label>
+                    <input type="text" id="noteInput" placeholder="בונוס, משכורת..." class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg">
+                </div>
+                <div class="flex items-end">
+                    <button id="addBtn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl">
+                        הוסף
+                    </button>
+                </div>
+            </div>
+            <p id="feedback" class="text-green-600 text-center mt-3 hidden">נוסף בהצלחה!</p>
+        </div>
+
+        <div class="card rounded-2xl shadow-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">טבלת יתרות</h2>
+                <button id="clearAllBtn" class="hidden text-red-500 hover:text-red-700 text-sm">מחק הכל</button>
+            </div>
+            <div id="noDataTable" class="text-center text-gray-400 py-8">
+                <div class="text-5xl mb-2">📋</div>
+                <p>עדיין אין נתונים</p>
+            </div>
+            <div id="tableContainer" class="hidden overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b-2 border-gray-200">
+                            <th class="text-right py-3 px-2">
+                                <button onclick="toggleSort('month')" class="flex items-center gap-1 hover:text-purple-600">
+                                    חודש <span id="sort-month" class="text-xs">▼</span>
+                                </button>
+                            </th>
+                            <th class="text-right py-3 px-2">
+                                <button onclick="toggleSort('amount')" class="flex items-center gap-1 hover:text-purple-600">
+                                    סכום <span id="sort-amount" class="text-xs text-gray-300">▼</span>
+                                </button>
+                            </th>
+                            <th class="text-right py-3 px-2">שינוי</th>
+                            <th class="text-right py-3 px-2">הערה</th>
+                            <th class="text-center py-3 px-2">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center mt-6 text-white/60 text-sm">
+            <p>הנתונים נשמרים אוטומטית בדפדפן</p>
+        </div>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 m-4 max-w-sm w-full">
+            <h3 class="text-xl font-semibold mb-4">עריכת רשומה</h3>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">סכום</label>
+                <input type="number" id="editAmountInput" step="0.01" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">הערה</label>
+                <input type="text" id="editNoteInput" placeholder="הערה..." class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+            <div class="flex gap-3">
+                <button id="saveEditBtn" class="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700">שמור</button>
+                <button id="cancelEditBtn" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 m-4 max-w-sm w-full text-center">
+            <h3 class="text-xl font-semibold mb-4">מחיקת רשומה</h3>
+            <p class="text-gray-600 mb-4">האם למחוק?</p>
+            <div class="flex gap-3">
+                <button id="confirmDeleteBtn" class="flex-1 bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700">מחק</button>
+                <button id="cancelDeleteBtn" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="yearlyStatsModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-4 border-b">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📊 נתונים שנתיים</h3>
+                <button onclick="closeYearlyStats()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">&times;</button>
+            </div>
+            <div id="yearlyStatsContent"></div>
+        </div>
+    </div>
+
+    <div id="annualReportsModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-4 border-b z-10">
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">📊 דוחות כספיים שנתיים</h3>
+                <button onclick="closeAnnualReports()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">&times;</button>
+            </div>
+            <div id="annualReportsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let entries = JSON.parse(localStorage.getItem('balanceEntries') || '[]');
+        let monthlyIncome = JSON.parse(localStorage.getItem('monthlyIncomeByYear') || '{}');
+        let editingId = null;
+        let deletingId = null;
+        let chart = null;
+        let sortConfig = { column: 'month', asc: true };
+        let darkMode = localStorage.getItem('darkMode') === 'true';
+
+        const $ = id => document.getElementById(id);
+
+        // Initialize dark mode
+        if (darkMode) document.body.classList.add('dark');
+        updateDarkModeIcon();
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark', darkMode);
+            localStorage.setItem('darkMode', darkMode);
+            updateDarkModeIcon();
+            // Recreate chart with proper colors
+            if (chart) { chart.destroy(); chart = null; }
+            renderChart();
+        }
+
+        function updateDarkModeIcon() {
+            $('darkModeIcon').textContent = darkMode ? '☀️' : '🌙';
+        }
+
+        window.toggleDarkMode = toggleDarkMode;
+
+        // Set current month
+        const now = new Date();
+        $('monthInput').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // Focus on amount input
+        $('amountInput').focus();
+
+        // Add entry
+        $('addBtn').onclick = addEntry;
+        $('amountInput').onkeydown = (e) => { if (e.key === 'Enter') addEntry(); };
+        $('noteInput').onkeydown = (e) => { if (e.key === 'Enter') addEntry(); };
+
+        function addEntry() {
+            const month = $('monthInput').value;
+            const amount = parseFloat($('amountInput').value);
+            const note = $('noteInput').value.trim();
+
+            if (!month) return alert('בחר חודש');
+            if (isNaN(amount)) return alert('הזן סכום');
+
+            const idx = entries.findIndex(e => e.month === month);
+            if (idx !== -1) {
+                entries[idx].amount = amount;
+                entries[idx].note = note;
+            } else {
+                entries.push({ id: Date.now(), month, amount, note });
+            }
+
+            saveAndRender();
+            $('amountInput').value = '';
+            $('noteInput').value = '';
+            $('amountInput').focus();
+
+            // Show feedback
+            $('feedback').classList.remove('hidden');
+            setTimeout(() => $('feedback').classList.add('hidden'), 2000);
+
+            // Move to next month
+            const [y, m] = month.split('-').map(Number);
+            const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+            $('monthInput').value = next;
+        }
+
+        // Delete handlers
+        $('confirmDeleteBtn').onclick = () => {
+            if (deletingId !== null) {
+                entries = entries.filter(e => e.id !== deletingId);
+                saveAndRender();
+                deletingId = null;
+            }
+            closeModal('deleteModal');
+        };
+        $('cancelDeleteBtn').onclick = () => closeModal('deleteModal');
+
+        $('clearAllBtn').onclick = () => {
+            if (confirm('למחוק את כל הרשומות?')) {
+                entries = [];
+                saveAndRender();
+            }
+        };
+
+        // Edit handlers
+        $('saveEditBtn').onclick = () => {
+            const amount = parseFloat($('editAmountInput').value);
+            const note = $('editNoteInput').value.trim();
+            if (!isNaN(amount)) {
+                const e = entries.find(x => x.id === editingId);
+                if (e) {
+                    e.amount = amount;
+                    e.note = note;
+                    saveAndRender();
+                }
+            }
+            closeModal('editModal');
+        };
+        $('cancelEditBtn').onclick = () => closeModal('editModal');
+
+        function openEdit(id) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            editingId = id;
+            $('editAmountInput').value = e.amount;
+            $('editNoteInput').value = e.note || '';
+            $('editModal').classList.remove('hidden');
+            $('editModal').classList.add('flex');
+            $('editAmountInput').focus();
+        }
+
+        function openDelete(id) {
+            deletingId = id;
+            $('deleteModal').classList.remove('hidden');
+            $('deleteModal').classList.add('flex');
+        }
+
+        function closeModal(id) {
+            $(id).classList.add('hidden');
+            $(id).classList.remove('flex');
+        }
+
+        function toggleSort(column) {
+            if (sortConfig.column === column) {
+                sortConfig.asc = !sortConfig.asc;
+            } else {
+                sortConfig.column = column;
+                sortConfig.asc = true;
+            }
+            updateSortIndicators();
+            renderTable();
+        }
+
+        function updateSortIndicators() {
+            ['month', 'amount'].forEach(col => {
+                const el = $(`sort-${col}`);
+                if (col === sortConfig.column) {
+                    el.textContent = sortConfig.asc ? '▲' : '▼';
+                    el.classList.remove('text-gray-300');
+                } else {
+                    el.textContent = '▼';
+                    el.classList.add('text-gray-300');
+                }
+            });
+        }
+
+        window.toggleSort = toggleSort;
+        window.openEdit = openEdit;
+        window.openDelete = openDelete;
+
+        function formatMonth(s) {
+            const [y, m] = s.split('-');
+            const names = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+            return `${names[parseInt(m)-1]} ${y}`;
+        }
+
+        function formatCurrency(n) {
+            return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(n);
+        }
+
+        function saveAndRender() {
+            entries.sort((a, b) => a.month.localeCompare(b.month));
+            localStorage.setItem('balanceEntries', JSON.stringify(entries));
+            renderTable();
+            renderChart();
+            renderInsights();
+            renderAIInsights();
+        }
+
+        function renderAIInsights() {
+            if (entries.length < 2) {
+                $('aiInsightsCard').classList.add('hidden');
+                return;
+            }
+            $('aiInsightsCard').classList.remove('hidden');
+
+            const insights = generateAIInsights();
+            $('aiInsightsContent').innerHTML = insights.map(insight => `
+                <div class="ai-insight flex items-start gap-3 p-3 rounded-xl ${insight.bgClass}">
+                    <span class="text-2xl">${insight.icon}</span>
+                    <div>
+                        <div class="font-semibold ${insight.textClass}">${insight.title}</div>
+                        <div class="text-sm text-gray-600">${insight.message}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function generateAIInsights() {
+            const insights = [];
+            const amounts = entries.map(e => e.amount);
+            const changes = [];
+            for (let i = 1; i < amounts.length; i++) {
+                changes.push(amounts[i] - amounts[i-1]);
+            }
+
+            const latest = amounts[amounts.length - 1];
+            const prev = amounts[amounts.length - 2];
+            const lastChange = latest - prev;
+            const lastChangePct = ((lastChange / prev) * 100).toFixed(1);
+            const avg = changes.reduce((a,b) => a+b, 0) / changes.length;
+
+            // Trend analysis - count actual consecutive months
+            let consecutivePositive = 0;
+            let consecutiveNegative = 0;
+
+            // Count from the end backwards
+            for (let i = changes.length - 1; i >= 0; i--) {
+                if (changes[i] > 0) {
+                    if (consecutiveNegative === 0) consecutivePositive++;
+                    else break;
+                } else if (changes[i] < 0) {
+                    if (consecutivePositive === 0) consecutiveNegative++;
+                    else break;
+                } else {
+                    break; // Zero change breaks the streak
+                }
+            }
+
+            if (consecutivePositive >= 2) {
+                insights.push({
+                    icon: '🚀',
+                    title: 'מגמת עלייה יציבה!',
+                    message: `${consecutivePositive} חודשים רצופים של עלייה. המומנטום חיובי!`,
+                    bgClass: 'bg-green-50',
+                    textClass: 'text-green-700'
+                });
+            } else if (consecutiveNegative >= 2) {
+                insights.push({
+                    icon: '⚠️',
+                    title: 'שים לב - מגמת ירידה',
+                    message: `${consecutiveNegative} חודשים רצופים של ירידה. כדאי לבדוק את ההוצאות.`,
+                    bgClass: 'bg-red-50',
+                    textClass: 'text-red-700'
+                });
+            }
+
+            // Last month analysis
+            if (lastChange > avg * 2 && lastChange > 0) {
+                insights.push({
+                    icon: '🎉',
+                    title: 'חודש מעולה!',
+                    message: `עלייה של ${formatCurrency(lastChange)} - יותר מכפול מהממוצע!`,
+                    bgClass: 'bg-purple-50',
+                    textClass: 'text-purple-700'
+                });
+            } else if (lastChange < avg * 0.5 && lastChange > 0) {
+                insights.push({
+                    icon: '💡',
+                    title: 'צמיחה מתונה',
+                    message: `החודש האחרון היה מתחת לממוצע. זה קורה, הכל בסדר.`,
+                    bgClass: 'bg-yellow-50',
+                    textClass: 'text-yellow-700'
+                });
+            }
+
+            // Projection
+            const monthsToMillion = avg > 0 ? Math.ceil((1000000 - latest) / avg) : null;
+            if (monthsToMillion && monthsToMillion > 0 && monthsToMillion < 120 && latest < 1000000) {
+                const years = Math.floor(monthsToMillion / 12);
+                const months = monthsToMillion % 12;
+                insights.push({
+                    icon: '🎯',
+                    title: 'צפי להגעה למיליון',
+                    message: years > 0 ? `בקצב הנוכחי, תגיע למיליון ₪ בעוד ${years} שנים ו-${months} חודשים` : `בקצב הנוכחי, תגיע למיליון ₪ בעוד ${months} חודשים!`,
+                    bgClass: 'bg-cyan-50',
+                    textClass: 'text-cyan-700'
+                });
+            }
+
+            // Volatility
+            const variance = changes.map(c => Math.pow(c - avg, 2)).reduce((a,b) => a+b, 0) / changes.length;
+            const stdDev = Math.sqrt(variance);
+            if (stdDev > Math.abs(avg) * 1.5) {
+                insights.push({
+                    icon: '🎢',
+                    title: 'תנודתיות גבוהה',
+                    message: 'יש הרבה עליות וירידות. אולי כדאי לייצב את ההכנסות/הוצאות.',
+                    bgClass: 'bg-amber-50',
+                    textClass: 'text-amber-700'
+                });
+            }
+
+            // Notes insight
+            const notesCount = entries.filter(e => e.note).length;
+            if (notesCount === 0 && entries.length > 3) {
+                insights.push({
+                    icon: '📝',
+                    title: 'טיפ: הוסף הערות',
+                    message: 'הערות יעזרו לך להבין למה היו שינויים בחודשים מסוימים.',
+                    bgClass: 'bg-gray-50',
+                    textClass: 'text-gray-700'
+                });
+            }
+
+            return insights.slice(0, 4); // Max 4 insights
+        }
+
+        function renderInsights() {
+            if (entries.length < 2) { $('insightsCard').classList.add('hidden'); return; }
+            $('insightsCard').classList.remove('hidden');
+
+            const amounts = entries.map(e => e.amount);
+            const latest = amounts[amounts.length - 1], first = amounts[0];
+            const totalChange = latest - first;
+            const pct = ((totalChange / first) * 100).toFixed(1);
+
+            let sum = 0;
+            for (let i = 1; i < amounts.length; i++) sum += amounts[i] - amounts[i-1];
+            const avg = sum / (amounts.length - 1);
+
+            let best = { c: -Infinity, m: '' }, worst = { c: Infinity, m: '' };
+            for (let i = 1; i < entries.length; i++) {
+                const c = entries[i].amount - entries[i-1].amount;
+                if (c > best.c) best = { c, m: entries[i].month };
+                if (c < worst.c) worst = { c, m: entries[i].month };
+            }
+
+            $('insightsContent').innerHTML = `
+                <div class="bg-purple-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500">שינוי כולל</div>
+                    <div class="text-xl font-bold ${totalChange >= 0 ? 'text-green-600' : 'text-red-600'}">${totalChange >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(totalChange))}</div>
+                    <div class="text-sm text-gray-500">${pct}%</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500">ממוצע חודשי</div>
+                    <div class="text-xl font-bold ${avg >= 0 ? 'text-green-600' : 'text-red-600'}">${avg >= 0 ? '+' : ''}${formatCurrency(avg)}</div>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500">צפי הבא</div>
+                    <div class="text-xl font-bold text-blue-600">${formatCurrency(latest + avg)}</div>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500">החודש הכי טוב</div>
+                    <div class="font-bold text-green-600">${formatMonth(best.m)}</div>
+                    <div class="text-sm">+${formatCurrency(best.c)}</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500">החודש הכי חלש</div>
+                    <div class="font-bold text-red-600">${formatMonth(worst.m)}</div>
+                    <div class="text-sm">${formatCurrency(worst.c)}</div>
+                </div>
+                <div class="bg-amber-50 p-4 rounded-xl">
+                    <div class="text-sm text-gray-500">סה"כ חודשים</div>
+                    <div class="text-xl font-bold text-amber-600">${entries.length}</div>
+                </div>
+            `;
+        }
+
+        function renderTable() {
+            if (!entries.length) {
+                $('tableContainer').classList.add('hidden');
+                $('noDataTable').classList.remove('hidden');
+                $('clearAllBtn').classList.add('hidden');
+                return;
+            }
+
+            $('tableContainer').classList.remove('hidden');
+            $('noDataTable').classList.add('hidden');
+            $('clearAllBtn').classList.remove('hidden');
+            $('tableBody').innerHTML = '';
+
+            // Sort entries for display
+            const sorted = [...entries].sort((a, b) => {
+                let cmp = 0;
+                if (sortConfig.column === 'month') {
+                    cmp = a.month.localeCompare(b.month);
+                } else if (sortConfig.column === 'amount') {
+                    cmp = a.amount - b.amount;
+                }
+                return sortConfig.asc ? cmp : -cmp;
+            });
+
+            // Create a map for calculating changes based on chronological order
+            const chronological = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+            const changeMap = {};
+            chronological.forEach((e, i) => {
+                const prev = chronological[i - 1];
+                if (prev) {
+                    const d = e.amount - prev.amount;
+                    const p = ((d / prev.amount) * 100).toFixed(1);
+                    changeMap[e.id] = { d, p };
+                }
+            });
+
+            sorted.forEach((e) => {
+                const changeData = changeMap[e.id];
+                let change = '-';
+                if (changeData) {
+                    const { d, p } = changeData;
+                    change = `<span class="${d >= 0 ? 'text-green-600' : 'text-red-600'}">${d >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(d))} (${p}%)</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="py-3 px-2">${formatMonth(e.month)}</td>
+                    <td class="py-3 px-2 font-semibold">${formatCurrency(e.amount)}</td>
+                    <td class="py-3 px-2">${change}</td>
+                    <td class="py-3 px-2 text-gray-500 text-sm max-w-32 truncate" title="${e.note || ''}">${e.note || '-'}</td>
+                    <td class="py-3 px-2 text-center">
+                        <button onclick="openEdit(${e.id})" class="text-blue-600 hover:text-blue-800 mx-1 p-1">✏️</button>
+                        <button onclick="openDelete(${e.id})" class="text-red-600 hover:text-red-800 mx-1 p-1">🗑️</button>
+                    </td>
+                `;
+                $('tableBody').appendChild(tr);
+            });
+        }
+
+        function renderChart() {
+            const canvas = $('balanceChart');
+            if (!entries.length) {
+                canvas.style.display = 'none';
+                $('noDataChart').classList.remove('hidden');
+                if (chart) { chart.destroy(); chart = null; }
+                return;
+            }
+
+            canvas.style.display = 'block';
+            $('noDataChart').classList.add('hidden');
+
+            const labels = entries.map(e => formatMonth(e.month));
+            const data = entries.map(e => e.amount);
+
+            const chartColor = darkMode ? '#a78bfa' : '#667eea';
+            const gridColor = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            const textColor = darkMode ? '#ccc' : '#666';
+
+            if (chart) {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = data;
+                chart.update();
+            } else {
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createLinearGradient(0, 0, 0, 300);
+                grad.addColorStop(0, darkMode ? 'rgba(167,139,250,0.4)' : 'rgba(102,126,234,0.4)');
+                grad.addColorStop(1, darkMode ? 'rgba(167,139,250,0)' : 'rgba(102,126,234,0)');
+
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data,
+                            borderColor: chartColor,
+                            backgroundColor: grad,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 6,
+                            pointBackgroundColor: chartColor
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: v => formatCurrency(v),
+                                    color: textColor
+                                },
+                                grid: { color: gridColor }
+                            },
+                            x: {
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Yearly Stats Functions
+        function openYearlyStats() {
+            const modal = document.getElementById('yearlyStatsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderYearlyStats();
+        }
+
+        function closeYearlyStats() {
+            const modal = document.getElementById('yearlyStatsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('yearlyStatsModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('yearlyStatsModal')) {
+                closeYearlyStats();
+            }
+        });
+
+        function renderYearlyStats() {
+            if (entries.length < 2) {
+                document.getElementById('yearlyStatsContent').innerHTML = '<p class="text-gray-400 text-center py-8">צריך לפחות 2 רשומות כדי לראות נתונים שנתיים</p>';
+                return;
+            }
+
+            // Sort all entries chronologically for accurate calculations
+            const sortedEntries = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+
+            // Group entries by year
+            const yearlyData = {};
+            sortedEntries.forEach(e => {
+                const year = e.month.split('-')[0];
+                if (!yearlyData[year]) {
+                    yearlyData[year] = [];
+                }
+                yearlyData[year].push(e);
+            });
+
+            const years = Object.keys(yearlyData).sort();
+            let html = '';
+
+            // Create stats for each year
+            years.forEach((year, idx) => {
+                const yearEntries = yearlyData[year]; // Already sorted
+                const amounts = yearEntries.map(e => e.amount);
+
+                // Monthly average balance for the year
+                const avgBalance = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+
+                // Get the first and last amount of this year
+                const firstAmount = amounts[0];
+                const lastAmount = amounts[amounts.length - 1];
+
+                // Calculate yearly savings: January to December (first to last entry of the year)
+                const yearlySavings = lastAmount - firstAmount;
+
+                // Calculate all month-to-month changes within this year only
+                let monthlyChanges = [];
+                for (let i = 1; i < yearEntries.length; i++) {
+                    const change = amounts[i] - amounts[i-1];
+                    monthlyChanges.push({ month: yearEntries[i].month, change });
+                }
+
+                // Calculate average monthly savings (only within the year)
+                const avgMonthlySavings = monthlyChanges.length > 0
+                    ? monthlyChanges.reduce((sum, c) => sum + c.change, 0) / monthlyChanges.length
+                    : 0;
+
+                // Best and worst months
+                let bestMonth = null, worstMonth = null;
+                monthlyChanges.forEach(c => {
+                    if (!bestMonth || c.change > bestMonth.change) {
+                        bestMonth = { month: c.month, change: c.change };
+                    }
+                    if (!worstMonth || c.change < worstMonth.change) {
+                        worstMonth = { month: c.month, change: c.change };
+                    }
+                });
+
+                // Year over year comparison - compare to previous year's savings
+                let yoyChange = '';
+                if (idx > 0 && firstAmount > 0) {
+                    const growthPct = ((yearlySavings / firstAmount) * 100).toFixed(1);
+                    const cls = yearlySavings >= 0 ? 'text-green-600' : 'text-red-600';
+                    yoyChange = `<div class="mt-2 text-sm ${cls}">צמיחה: ${growthPct}%</div>`;
+                } else if (firstAmount > 0) {
+                    const growthPct = ((yearlySavings / firstAmount) * 100).toFixed(1);
+                    const cls = yearlySavings >= 0 ? 'text-green-600' : 'text-red-600';
+                    yoyChange = `<div class="mt-2 text-sm ${cls}">צמיחה: ${growthPct}%</div>`;
+                }
+
+                // Get monthly income for this year
+                const yearMonthlyIncome = monthlyIncome[year] || [];
+                const totalMonthlyIncome = yearMonthlyIncome.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+                html += `
+                    <div class="mb-6 p-5 bg-gray-100 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600">${year}</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">חיסכון שנתי כולל</div>
+                                <div class="text-lg font-bold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${yearlySavings >= 0 ? '+' : ''}${formatCurrency(yearlySavings)}</div>
+                                ${yoyChange}
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חיסכון חודשי</div>
+                                <div class="text-lg font-bold ${avgMonthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${avgMonthlySavings >= 0 ? '+' : ''}${formatCurrency(avgMonthlySavings)}</div>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">מספר חודשים</div>
+                                <div class="text-lg font-bold text-gray-800 dark:text-white">${yearEntries.length}</div>
+                            </div>
+                        </div>
+                        ${bestMonth && worstMonth ? `
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
+                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי טוב</div>
+                                <div class="font-bold text-green-700 dark:text-green-400">${formatMonth(bestMonth.month)}</div>
+                                <div class="text-sm text-green-600 dark:text-green-500">+${formatCurrency(bestMonth.change)}</div>
+                            </div>
+                            <div class="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg">
+                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי חלש</div>
+                                <div class="font-bold text-red-700 dark:text-red-400">${formatMonth(worstMonth.month)}</div>
+                                <div class="text-sm text-red-600 dark:text-red-500">${formatCurrency(worstMonth.change)}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <!-- Monthly Income Section -->
+                        <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">📅 הכנסות חודשיות קבועות</div>
+                                <div class="text-lg font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome)}/חודש</div>
+                            </div>
+                            <div id="monthlyIncome-${year}" class="space-y-2">
+                                ${yearMonthlyIncome.map(item => `
+                                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded text-sm">
+                                        <span class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 rounded text-xs ${getTypeColor(item.type)}">${item.type}</span>
+                                            ${item.description}
+                                        </span>
+                                        <span class="flex items-center gap-2">
+                                            <span class="font-semibold">${formatCurrency(item.amount)}</span>
+                                            <button onclick="deleteMonthlyIncomeItem('${year}', ${item.id})" class="text-red-500 hover:text-red-700">×</button>
+                                        </span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <input type="text" id="incomeDesc-${year}" placeholder="תיאור" class="flex-1 px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600">
+                                <input type="number" id="incomeAmount-${year}" placeholder="סכום" class="w-24 px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600">
+                                <select id="incomeType-${year}" class="px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600">
+                                    <option value="משכורת">משכורת</option>
+                                    <option value="שכר דירה">שכר דירה</option>
+                                    <option value="הוראת קבע">הוראת קבע</option>
+                                    <option value="אחר">אחר</option>
+                                </select>
+                                <button onclick="addMonthlyIncomeItem('${year}')" class="px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Add total summary using sorted entries
+            const firstEntry = sortedEntries[0];
+            const lastEntry = sortedEntries[sortedEntries.length - 1];
+            const totalSavings = lastEntry.amount - firstEntry.amount;
+
+            // Calculate total number of month-to-month changes
+            const totalMonths = sortedEntries.length - 1;
+            const totalAvgMonthly = totalMonths > 0 ? totalSavings / totalMonths : 0;
+
+            // Calculate time period
+            const startDate = new Date(firstEntry.month + '-01');
+            const endDate = new Date(lastEntry.month + '-01');
+            const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+
+            const totalGrowthPct = firstEntry.amount > 0 ? ((totalSavings / firstEntry.amount) * 100).toFixed(1) : 0;
+
+            html = `
+                <div class="mb-6 p-5 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 rounded-xl border border-purple-200 dark:border-purple-700">
+                    <h4 class="text-xl font-bold text-purple-700 dark:text-purple-300 mb-4">📈 סיכום כללי</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">תקופה: ${formatMonth(firstEntry.month)} עד ${formatMonth(lastEntry.month)} (${monthsDiff} חודשים)</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה התחלתית</div>
+                            <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(firstEntry.amount)}</div>
+                        </div>
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה נוכחית</div>
+                            <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(lastEntry.amount)}</div>
+                        </div>
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">סה"כ חיסכון</div>
+                            <div class="text-lg font-bold ${totalSavings >= 0 ? 'text-green-600' : 'text-red-600'}">${totalSavings >= 0 ? '+' : ''}${formatCurrency(totalSavings)}</div>
+                            <div class="text-xs ${totalSavings >= 0 ? 'text-green-500' : 'text-red-500'}">(${totalGrowthPct}%)</div>
+                        </div>
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
+                            <div class="text-lg font-bold ${totalAvgMonthly >= 0 ? 'text-green-600' : 'text-red-600'}">${totalAvgMonthly >= 0 ? '+' : ''}${formatCurrency(totalAvgMonthly)}</div>
+                        </div>
+                    </div>
+                </div>
+            ` + html;
+
+            document.getElementById('yearlyStatsContent').innerHTML = html;
+        }
+
+        // Monthly Income Functions
+        function getTypeColor(type) {
+            const colors = {
+                'משכורת': 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+                'שכר דירה': 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400',
+                'הוראת קבע': 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400',
+                'אחר': 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+            };
+            return colors[type] || colors['אחר'];
+        }
+
+        function addMonthlyIncomeItem(year) {
+            const desc = document.getElementById(`incomeDesc-${year}`).value.trim();
+            const amount = parseFloat(document.getElementById(`incomeAmount-${year}`).value);
+            const type = document.getElementById(`incomeType-${year}`).value;
+
+            if (!desc || isNaN(amount)) {
+                alert('נא למלא תיאור וסכום');
+                return;
+            }
+
+            if (!monthlyIncome[year]) {
+                monthlyIncome[year] = [];
+            }
+
+            monthlyIncome[year].push({
+                id: Date.now(),
+                description: desc,
+                amount: amount,
+                type: type
+            });
+
+            localStorage.setItem('monthlyIncomeByYear', JSON.stringify(monthlyIncome));
+            renderYearlyStats();
+        }
+
+        function deleteMonthlyIncomeItem(year, id) {
+            if (monthlyIncome[year]) {
+                monthlyIncome[year] = monthlyIncome[year].filter(item => item.id !== id);
+                localStorage.setItem('monthlyIncomeByYear', JSON.stringify(monthlyIncome));
+                renderYearlyStats();
+            }
+        }
+
+        // Annual Reports Functions
+        function openAnnualReports() {
+            const modal = document.getElementById('annualReportsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderAnnualReports();
+        }
+
+        function closeAnnualReports() {
+            const modal = document.getElementById('annualReportsModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('annualReportsModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('annualReportsModal')) {
+                closeAnnualReports();
+            }
+        });
+
+        function renderAnnualReports() {
+            if (entries.length < 2) {
+                document.getElementById('annualReportsContent').innerHTML = '<p class="text-gray-400 text-center py-8">צריך לפחות 2 רשומות כדי ליצור דוחות</p>';
+                return;
+            }
+
+            const sortedEntries = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+
+            // Group by year
+            const yearlyData = {};
+            sortedEntries.forEach(e => {
+                const year = e.month.split('-')[0];
+                if (!yearlyData[year]) yearlyData[year] = [];
+                yearlyData[year].push(e);
+            });
+
+            const years = Object.keys(yearlyData).sort();
+            let html = '';
+
+            // Generate report for each year (starting from the second year for comparison)
+            years.forEach((year, idx) => {
+                const yearEntries = yearlyData[year];
+                const amounts = yearEntries.map(e => e.amount);
+                const firstAmount = amounts[0];
+                const lastAmount = amounts[amounts.length - 1];
+                const yearlySavings = lastAmount - firstAmount;
+
+                // Get monthly income data
+                const yearMonthlyIncome = monthlyIncome[year] || [];
+                const totalMonthlyIncome = yearMonthlyIncome.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+                // Previous year data for comparison
+                let prevYearData = null;
+                let prevYearMonthlyIncome = 0;
+                let savingsChange = null;
+                let savingsChangePct = null;
+                let incomeChange = null;
+                let incomeChangePct = null;
+
+                if (idx > 0) {
+                    const prevYear = years[idx - 1];
+                    const prevEntries = yearlyData[prevYear];
+                    const prevAmounts = prevEntries.map(e => e.amount);
+                    const prevFirstAmount = prevAmounts[0];
+                    const prevLastAmount = prevAmounts[prevAmounts.length - 1];
+                    const prevYearlySavings = prevLastAmount - prevFirstAmount;
+
+                    prevYearData = {
+                        savings: prevYearlySavings,
+                        endBalance: prevLastAmount
+                    };
+
+                    // Savings comparison
+                    savingsChange = yearlySavings - prevYearlySavings;
+                    savingsChangePct = prevYearlySavings !== 0 ? ((savingsChange / Math.abs(prevYearlySavings)) * 100).toFixed(1) : 0;
+
+                    // Income comparison
+                    const prevYearIncomeData = monthlyIncome[prevYear] || [];
+                    prevYearMonthlyIncome = prevYearIncomeData.reduce((sum, item) => sum + (item.amount || 0), 0);
+                    if (prevYearMonthlyIncome > 0 && totalMonthlyIncome > 0) {
+                        incomeChange = totalMonthlyIncome - prevYearMonthlyIncome;
+                        incomeChangePct = ((incomeChange / prevYearMonthlyIncome) * 100).toFixed(1);
+                    }
+                }
+
+                // Calculate monthly stats
+                let monthlyChanges = [];
+                for (let i = 1; i < yearEntries.length; i++) {
+                    monthlyChanges.push(amounts[i] - amounts[i-1]);
+                }
+                const avgMonthlySavings = monthlyChanges.length > 0
+                    ? monthlyChanges.reduce((a, b) => a + b, 0) / monthlyChanges.length
+                    : 0;
+
+                // Best and worst months
+                let bestMonthIdx = 0, worstMonthIdx = 0;
+                monthlyChanges.forEach((change, i) => {
+                    if (change > monthlyChanges[bestMonthIdx]) bestMonthIdx = i;
+                    if (change < monthlyChanges[worstMonthIdx]) worstMonthIdx = i;
+                });
+
+                // Growth percentage
+                const growthPct = firstAmount > 0 ? ((yearlySavings / firstAmount) * 100).toFixed(1) : 0;
+
+                html += `
+                    <div class="mb-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-600 overflow-hidden">
+                        <!-- Report Header -->
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
+                            <div class="flex justify-between items-center">
+                                <h4 class="text-2xl font-bold">דוח שנתי ${year}</h4>
+                                <span class="text-lg opacity-80">${yearEntries.length} חודשים</span>
+                            </div>
+                        </div>
+
+                        <div class="p-5">
+                            <!-- Main Metrics -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה פתיחה</div>
+                                    <div class="text-xl font-bold text-gray-800 dark:text-white">${formatCurrency(firstAmount)}</div>
+                                </div>
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה סגירה</div>
+                                    <div class="text-xl font-bold text-gray-800 dark:text-white">${formatCurrency(lastAmount)}</div>
+                                </div>
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">חיסכון שנתי</div>
+                                    <div class="text-xl font-bold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${yearlySavings >= 0 ? '+' : ''}${formatCurrency(yearlySavings)}</div>
+                                    <div class="text-xs ${yearlySavings >= 0 ? 'text-green-500' : 'text-red-500'}">(${growthPct}%)</div>
+                                </div>
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
+                                    <div class="text-xl font-bold ${avgMonthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${avgMonthlySavings >= 0 ? '+' : ''}${formatCurrency(avgMonthlySavings)}</div>
+                                </div>
+                            </div>
+
+                            ${prevYearData ? `
+                            <!-- Year over Year Comparison -->
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
+                                <h5 class="font-semibold text-blue-800 dark:text-blue-300 mb-3">📈 השוואה לשנת ${years[idx-1]}</h5>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">שינוי בחיסכון השנתי</div>
+                                        <div class="text-lg font-bold ${savingsChange >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                            ${savingsChange >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(savingsChange))}
+                                        </div>
+                                        <div class="text-sm ${savingsChange >= 0 ? 'text-green-500' : 'text-red-500'}">(${savingsChangePct}%)</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">חיסכון ${years[idx-1]}</div>
+                                        <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(prevYearData.savings)}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">חיסכון ${year}</div>
+                                        <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(yearlySavings)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            ${totalMonthlyIncome > 0 ? `
+                            <!-- Monthly Income Section -->
+                            <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 mb-6">
+                                <h5 class="font-semibold text-yellow-800 dark:text-yellow-300 mb-3">💰 הכנסות חודשיות קבועות</h5>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">סה"כ הכנסה חודשית</div>
+                                        <div class="text-xl font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome)}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">הכנסה שנתית צפויה</div>
+                                        <div class="text-xl font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome * 12)}</div>
+                                    </div>
+                                    ${incomeChange !== null ? `
+                                    <div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">שינוי מהשנה הקודמת</div>
+                                        <div class="text-lg font-bold ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                            ${incomeChange >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(incomeChange))} (${incomeChangePct}%)
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    ${yearMonthlyIncome.map(item => `
+                                        <span class="px-3 py-1 rounded-full text-sm ${getTypeColor(item.type)}">${item.description}: ${formatCurrency(item.amount)}</span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            ${monthlyChanges.length > 0 ? `
+                            <!-- Best/Worst Months -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי טוב</div>
+                                    <div class="font-bold text-green-700 dark:text-green-400">${formatMonth(yearEntries[bestMonthIdx + 1]?.month || yearEntries[bestMonthIdx].month)}</div>
+                                    <div class="text-lg text-green-600">+${formatCurrency(monthlyChanges[bestMonthIdx])}</div>
+                                </div>
+                                <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4">
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי חלש</div>
+                                    <div class="font-bold text-red-700 dark:text-red-400">${formatMonth(yearEntries[worstMonthIdx + 1]?.month || yearEntries[worstMonthIdx].month)}</div>
+                                    <div class="text-lg text-red-600">${formatCurrency(monthlyChanges[worstMonthIdx])}</div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Add overall summary at the top
+            const firstEntry = sortedEntries[0];
+            const lastEntry = sortedEntries[sortedEntries.length - 1];
+            const totalSavings = lastEntry.amount - firstEntry.amount;
+            const totalYears = years.length;
+            const avgYearlySavings = totalYears > 0 ? totalSavings / totalYears : 0;
+
+            const summaryHtml = `
+                <div class="mb-8 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
+                    <h4 class="text-xl font-bold mb-4">📊 סיכום כל השנים</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white/20 rounded-xl p-4">
+                            <div class="text-sm opacity-80">תקופת מעקב</div>
+                            <div class="text-2xl font-bold">${totalYears} שנים</div>
+                        </div>
+                        <div class="bg-white/20 rounded-xl p-4">
+                            <div class="text-sm opacity-80">סה"כ חיסכון</div>
+                            <div class="text-2xl font-bold">${formatCurrency(totalSavings)}</div>
+                        </div>
+                        <div class="bg-white/20 rounded-xl p-4">
+                            <div class="text-sm opacity-80">ממוצע שנתי</div>
+                            <div class="text-2xl font-bold">${formatCurrency(avgYearlySavings)}</div>
+                        </div>
+                        <div class="bg-white/20 rounded-xl p-4">
+                            <div class="text-sm opacity-80">צמיחה כוללת</div>
+                            <div class="text-2xl font-bold">${firstEntry.amount > 0 ? ((totalSavings / firstEntry.amount) * 100).toFixed(1) : 0}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('annualReportsContent').innerHTML = summaryHtml + html;
+        }
+
+        window.openYearlyStats = openYearlyStats;
+        window.closeYearlyStats = closeYearlyStats;
+        window.addMonthlyIncomeItem = addMonthlyIncomeItem;
+        window.deleteMonthlyIncomeItem = deleteMonthlyIncomeItem;
+        window.openAnnualReports = openAnnualReports;
+        window.closeAnnualReports = closeAnnualReports;
+
+        // Initial render
+        renderTable();
+        renderChart();
+        renderInsights();
+        renderAIInsights();
+        updateSortIndicators();
+    </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js');
+    }
+    </script>
+</body>
+</html>
