@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#e8b4b8">
+    <link rel="manifest" href="../manifest.json">
+    <link rel="apple-touch-icon" href="../icon-192.png">
+    <title>Love Dashboard - אריאל ושירז</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-pink: #e8b4b8;
+            --primary-pink-dark: #d4959a;
+            --gold: #c9a227;
+            --gold-light: #f0e6c8;
+            --cream: #faf8f5;
+            --white: #ffffff;
+            --text-dark: #2d2d2d;
+            --text-light: #6b6b6b;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            background: var(--cream);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 15px 0;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+            padding: 5px 10px;
+        }
+
+        nav a:hover {
+            color: var(--primary-pink-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 100px 20px 60px;
+            background: linear-gradient(135deg, var(--white) 0%, var(--cream) 50%, var(--gold-light) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(232, 180, 184, 0.15) 0%, transparent 70%);
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s ease;
+        }
+
+        .hero-heart {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 500;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--text-dark) 0%, var(--primary-pink-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-names {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .hero-names span {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 6vw, 3.5rem);
+        }
+
+        .hero-names .heart {
+            color: var(--primary-pink);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            margin-top: 20px;
+            font-weight: 300;
+        }
+
+        .hero-date {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 30px;
+            background: var(--white);
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            font-weight: 500;
+            color: var(--primary-pink-dark);
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-pink), var(--gold));
+            margin: 15px auto 0;
+            border-radius: 2px;
+        }
+
+        /* Counter Section */
+        .counter-section {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 50px 30px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .counter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .counter-item {
+            padding: 25px 15px;
+            background: var(--cream);
+            border-radius: var(--radius-sm);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .counter-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .counter-number {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--primary-pink-dark);
+            display: block;
+        }
+
+        .counter-label {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+
+        .next-anniversary {
+            margin-top: 40px;
+            padding: 25px;
+            background: linear-gradient(135deg, var(--gold-light), var(--cream));
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(201, 162, 39, 0.2);
+        }
+
+        .next-anniversary h3 {
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            right: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--primary-pink), var(--gold));
+            transform: translateX(50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 50px;
+            width: 45%;
+        }
+
+        .timeline-item:nth-child(odd) {
+            margin-right: auto;
+            padding-left: 40px;
+        }
+
+        .timeline-item:nth-child(even) {
+            margin-left: auto;
+            padding-right: 40px;
+            text-align: left;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--white);
+            border: 3px solid var(--primary-pink);
+            border-radius: 50%;
+            top: 20px;
+        }
+
+        .timeline-item:nth-child(odd)::before {
+            left: -8px;
+        }
+
+        .timeline-item:nth-child(even)::before {
+            right: -8px;
+        }
+
+        .timeline-content {
+            background: var(--white);
+            padding: 25px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .timeline-date {
+            font-size: 0.85rem;
+            color: var(--primary-pink-dark);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .timeline-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .timeline-desc {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .timeline-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            margin-top: 15px;
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.03);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        .gallery-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--white);
+            color: var(--text-light);
+            font-size: 3rem;
+        }
+
+        .gallery-placeholder span {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: var(--radius-sm);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2.5rem;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s;
+            background: none;
+            border: none;
+        }
+
+        .lightbox-close:hover {
+            transform: scale(1.2);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            color: white;
+            cursor: pointer;
+            padding: 20px;
+            transition: transform 0.3s;
+            background: none;
+            border: none;
+        }
+
+        .lightbox-nav:hover {
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .lightbox-prev { right: 20px; }
+        .lightbox-next { left: 20px; }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 25px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 30px 20px;
+            border-radius: var(--radius);
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-pink), var(--gold));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        .stat-edit {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--cream);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .stat-card:hover .stat-edit {
+            opacity: 1;
+        }
+
+        /* Bucket List */
+        .bucket-list {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 40px;
+            box-shadow: var(--shadow);
+        }
+
+        .bucket-progress {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: var(--cream);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-pink), var(--gold));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .bucket-items {
+            list-style: none;
+        }
+
+        .bucket-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 18px 15px;
+            border-bottom: 1px solid var(--cream);
+            transition: background 0.3s;
+        }
+
+        .bucket-item:hover {
+            background: var(--cream);
+            border-radius: var(--radius-sm);
+        }
+
+        .bucket-item:last-child {
+            border-bottom: none;
+        }
+
+        .bucket-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--primary-pink);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .bucket-checkbox.checked {
+            background: var(--primary-pink);
+            color: white;
+        }
+
+        .bucket-text {
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        .bucket-text.completed {
+            text-decoration: line-through;
+            color: var(--text-light);
+        }
+
+        .bucket-delete {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s, color 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .bucket-item:hover .bucket-delete {
+            opacity: 1;
+        }
+
+        .bucket-delete:hover {
+            color: #e74c3c;
+        }
+
+        .bucket-add {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .bucket-add input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid var(--cream);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .bucket-add input:focus {
+            outline: none;
+            border-color: var(--primary-pink);
+        }
+
+        .bucket-add button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, var(--primary-pink), var(--primary-pink-dark));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .bucket-add button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        /* Memory of the Week */
+        .memory-section {
+            background: linear-gradient(135deg, var(--white), var(--gold-light));
+            border-radius: var(--radius);
+            padding: 50px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .memory-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .memory-image-container {
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: var(--shadow-hover);
+            border: 5px solid var(--white);
+        }
+
+        .memory-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .memory-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--cream);
+            color: var(--text-light);
+            font-size: 4rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .memory-placeholder:hover {
+            background: var(--primary-pink);
+            color: white;
+        }
+
+        .memory-placeholder span {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .memory-text {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            color: var(--text-dark);
+            font-style: italic;
+        }
+
+        .memory-edit {
+            margin-top: 25px;
+        }
+
+        .memory-edit textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--cream);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .memory-edit textarea:focus {
+            outline: none;
+            border-color: var(--primary-pink);
+        }
+
+        /* Upload Button */
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 25px;
+            background: var(--white);
+            border: 2px dashed var(--primary-pink);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            color: var(--primary-pink-dark);
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .upload-btn:hover {
+            background: var(--primary-pink);
+            color: white;
+            border-style: solid;
+        }
+
+        /* Settings Panel */
+        .settings-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-pink), var(--gold));
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-hover);
+            font-size: 1.5rem;
+            color: white;
+            z-index: 999;
+            transition: transform 0.3s;
+        }
+
+        .settings-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+
+        .settings-panel.active {
+            display: flex;
+        }
+
+        .settings-content {
+            background: var(--white);
+            padding: 40px;
+            border-radius: var(--radius);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .settings-content h2 {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .settings-group {
+            margin-bottom: 25px;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .settings-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--cream);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .settings-group input:focus {
+            outline: none;
+            border-color: var(--primary-pink);
+        }
+
+        .settings-save {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary-pink), var(--primary-pink-dark));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: inherit;
+            transition: transform 0.3s;
+        }
+
+        .settings-save:hover {
+            transform: translateY(-2px);
+        }
+
+        .settings-close {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            background: var(--white);
+            color: var(--text-light);
+        }
+
+        footer p {
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 15px;
+                padding: 0 15px;
+            }
+
+            nav a {
+                font-size: 0.85rem;
+            }
+
+            section {
+                padding: 60px 15px;
+            }
+
+            .timeline::before {
+                right: 20px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                padding-right: 50px !important;
+                padding-left: 0 !important;
+                text-align: right !important;
+            }
+
+            .timeline-item::before {
+                right: 12px !important;
+                left: auto !important;
+            }
+
+            .counter-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .bucket-list {
+                padding: 25px;
+            }
+
+            .memory-section {
+                padding: 30px 20px;
+            }
+
+            .memory-image-container {
+                width: 200px;
+                height: 200px;
+            }
+
+            .settings-btn {
+                bottom: 20px;
+                left: 20px;
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        /* Edit Modal */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .edit-modal.active {
+            display: flex;
+        }
+
+        .edit-modal-content {
+            background: var(--white);
+            padding: 30px;
+            border-radius: var(--radius);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .edit-modal-content h3 {
+            margin-bottom: 20px;
+        }
+
+        .edit-modal-content input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--cream);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .edit-modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .edit-modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .edit-modal-buttons .save {
+            background: var(--primary-pink);
+            color: white;
+        }
+
+        .edit-modal-buttons .cancel {
+            background: var(--cream);
+        }
+
+        /* Hidden file input */
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="#hero">בית</a></li>
+            <li><a href="#counter">זמן ביחד</a></li>
+            <li><a href="#timeline">ציר זמן</a></li>
+            <li><a href="#gallery">גלריה</a></li>
+            <li><a href="#stats">סטטיסטיקות</a></li>
+            <li><a href="#bucket">רשימת חלומות</a></li>
+            <li><a href="#memory">זיכרון השבוע</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-content">
+            <div class="hero-heart">💕</div>
+            <div class="hero-names">
+                <span id="name1">אריאל</span>
+                <span class="heart">❤️</span>
+                <span id="name2">שירז</span>
+            </div>
+            <p class="hero-subtitle">סיפור האהבה שלנו</p>
+            <div class="hero-date">ביחד מאז <span id="startDateDisplay">21 בדצמבר 2023</span></div>
+        </div>
+    </section>
+
+    <!-- Counter Section -->
+    <section id="counter">
+        <h2 class="section-title">כמה זמן ביחד</h2>
+        <div class="counter-section animate-on-scroll">
+            <h3>כבר עברו...</h3>
+            <div class="counter-grid">
+                <div class="counter-item">
+                    <span class="counter-number" id="years">0</span>
+                    <span class="counter-label">שנים</span>
+                </div>
+                <div class="counter-item">
+                    <span class="counter-number" id="months">0</span>
+                    <span class="counter-label">חודשים</span>
+                </div>
+                <div class="counter-item">
+                    <span class="counter-number" id="days">0</span>
+                    <span class="counter-label">ימים</span>
+                </div>
+                <div class="counter-item">
+                    <span class="counter-number" id="totalDays">0</span>
+                    <span class="counter-label">סה"כ ימים</span>
+                </div>
+            </div>
+            <div class="next-anniversary">
+                <h3>🎉 עד יום השנה הבא</h3>
+                <p><span id="daysToAnniversary">0</span> ימים</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline Section -->
+    <section id="timeline">
+        <h2 class="section-title">ציר הזמן שלנו</h2>
+        <div class="timeline" id="timelineContainer">
+            <!-- Timeline items will be dynamically generated -->
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="upload-btn" onclick="addTimelineEvent()">➕ הוסף אירוע חדש</button>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery">
+        <h2 class="section-title">הגלריה שלנו</h2>
+        <div class="gallery-grid" id="galleryGrid">
+            <!-- Gallery items will be dynamically generated -->
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <label class="upload-btn">
+                📷 העלה תמונות
+                <input type="file" id="galleryUpload" accept="image/*" multiple onchange="handleGalleryUpload(event)">
+            </label>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section id="stats">
+        <h2 class="section-title">הסטטיסטיקות שלנו</h2>
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be dynamically generated -->
+        </div>
+    </section>
+
+    <!-- Bucket List Section -->
+    <section id="bucket">
+        <h2 class="section-title">רשימת החלומות שלנו</h2>
+        <div class="bucket-list animate-on-scroll">
+            <div class="bucket-progress">
+                <h3>התקדמות: <span id="bucketPercent">0</span>%</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+            </div>
+            <ul class="bucket-items" id="bucketItems">
+                <!-- Bucket items will be dynamically generated -->
+            </ul>
+            <div class="bucket-add">
+                <input type="text" id="newBucketItem" placeholder="הוסף חלום חדש...">
+                <button onclick="addBucketItem()">הוסף</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memory of the Week Section -->
+    <section id="memory">
+        <h2 class="section-title">זיכרון השבוע</h2>
+        <div class="memory-section animate-on-scroll">
+            <div class="memory-content">
+                <div class="memory-image-container">
+                    <label id="memoryImageLabel">
+                        <img id="memoryImage" class="memory-image" style="display: none;">
+                        <div id="memoryPlaceholder" class="memory-placeholder">
+                            📸
+                            <span>לחץ להעלאת תמונה</span>
+                        </div>
+                        <input type="file" id="memoryUpload" accept="image/*" onchange="handleMemoryUpload(event)">
+                    </label>
+                </div>
+                <p class="memory-text" id="memoryText">לחצו כאן כדי להוסיף את הזיכרון המיוחד שלכם מהשבוע...</p>
+                <div class="memory-edit">
+                    <textarea id="memoryTextarea" placeholder="כתבו כאן את הזיכרון שלכם..." onchange="saveMemoryText()"></textarea>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>נוצר באהבה 💕 <span id="footerYear"></span></p>
+    </footer>
+
+    <!-- Settings Button -->
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-content" style="position: relative;">
+            <button class="settings-close" onclick="closeSettings()">✕</button>
+            <h2>הגדרות</h2>
+            <div class="settings-group">
+                <label>שם ראשון</label>
+                <input type="text" id="settingsName1" placeholder="אריאל">
+            </div>
+            <div class="settings-group">
+                <label>שם שני</label>
+                <input type="text" id="settingsName2" placeholder="שירז">
+            </div>
+            <div class="settings-group">
+                <label>תאריך התחלת הקשר</label>
+                <input type="date" id="settingsStartDate">
+            </div>
+            <button class="settings-save" onclick="saveSettings()">שמור הגדרות</button>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+        <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
+        <img id="lightboxImage" src="" alt="">
+        <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">›</button>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="edit-modal" id="editModal">
+        <div class="edit-modal-content">
+            <h3 id="editModalTitle">עריכה</h3>
+            <input type="number" id="editModalInput">
+            <div class="edit-modal-buttons">
+                <button class="save" onclick="saveEditModal()">שמור</button>
+                <button class="cancel" onclick="closeEditModal()">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Event Modal -->
+    <div class="edit-modal" id="timelineModal">
+        <div class="edit-modal-content" style="max-width: 500px;">
+            <h3>הוסף אירוע חדש</h3>
+            <input type="date" id="timelineEventDate" style="margin-bottom: 10px;">
+            <input type="text" id="timelineEventTitle" placeholder="כותרת האירוע">
+            <textarea id="timelineEventDesc" placeholder="תיאור קצר..." style="width: 100%; padding: 12px; border: 2px solid var(--cream); border-radius: 10px; margin-bottom: 15px; min-height: 80px; font-family: inherit;"></textarea>
+            <label class="upload-btn" style="margin-bottom: 15px; display: inline-block;">
+                📷 העלה תמונה (אופציונלי)
+                <input type="file" id="timelineEventImage" accept="image/*">
+            </label>
+            <div class="edit-modal-buttons">
+                <button class="save" onclick="saveTimelineEvent()">הוסף</button>
+                <button class="cancel" onclick="closeTimelineModal()">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Data Management ====================
+        const defaultData = {
+            name1: 'אריאל',
+            name2: 'שירז',
+            startDate: '2023-12-21',
+            timeline: [
+                {
+                    date: '2023-12-21',
+                    title: 'הדייט הראשון',
+                    desc: 'היום שבו הכל התחיל... פגישה מרגשת בבית קפה',
+                    image: ''
+                },
+                {
+                    date: '2024-01-15',
+                    title: 'הנשיקה הראשונה',
+                    desc: 'רגע קסום שלא נשכח לעולם',
+                    image: ''
+                },
+                {
+                    date: '2024-03-10',
+                    title: 'הטיול הראשון ביחד',
+                    desc: 'סוף שבוע רומנטי בצפון',
+                    image: ''
+                },
+                {
+                    date: '2024-06-01',
+                    title: 'אמרנו "אני אוהב אותך"',
+                    desc: 'הרגע שבו ידענו שזה אמיתי',
+                    image: ''
+                }
+            ],
+            gallery: [],
+            stats: [
+                { icon: '🍽️', label: 'ארוחות ביחד', value: 156 },
+                { icon: '🎬', label: 'סרטים', value: 42 },
+                { icon: '✈️', label: 'טיולים', value: 8 },
+                { icon: '☕', label: 'קפה ביחד', value: 234 },
+                { icon: '🎁', label: 'מתנות', value: 18 },
+                { icon: '📸', label: 'תמונות', value: 523 }
+            ],
+            bucketList: [
+                { text: 'לטוס לפריז ביחד', completed: false },
+                { text: 'לראות זריחה מהר', completed: true },
+                { text: 'לבשל ארוחה מושלמת ביחד', completed: true },
+                { text: 'לרקוד בגשם', completed: false },
+                { text: 'פיקניק רומנטי בשקיעה', completed: true },
+                { text: 'ללמוד שפה חדשה ביחד', completed: false },
+                { text: 'מסע קמפינג מתחת לכוכבים', completed: false },
+                { text: 'לעשות קעקוע תואם', completed: false }
+            ],
+            memoryText: 'השבוע היה מיוחד במיוחד! יצאנו לטיול ספונטני והתאהבנו מחדש בכל רגע...',
+            memoryImage: ''
+        };
+
+        // Load data from localStorage or use defaults
+        function loadData() {
+            const saved = localStorage.getItem('loveDashboardData');
+            return saved ? JSON.parse(saved) : defaultData;
+        }
+
+        function saveData(data) {
+            localStorage.setItem('loveDashboardData', JSON.stringify(data));
+        }
+
+        let appData = loadData();
+
+        // ==================== Initialize App ====================
+        function init() {
+            updateNames();
+            updateCounter();
+            renderTimeline();
+            renderGallery();
+            renderStats();
+            renderBucketList();
+            renderMemory();
+            setupScrollAnimations();
+            document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+            // Update counter every minute
+            setInterval(updateCounter, 60000);
+        }
+
+        // ==================== Settings ====================
+        function openSettings() {
+            document.getElementById('settingsPanel').classList.add('active');
+            document.getElementById('settingsName1').value = appData.name1;
+            document.getElementById('settingsName2').value = appData.name2;
+            document.getElementById('settingsStartDate').value = appData.startDate;
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsPanel').classList.remove('active');
+        }
+
+        function saveSettings() {
+            appData.name1 = document.getElementById('settingsName1').value || 'אריאל';
+            appData.name2 = document.getElementById('settingsName2').value || 'שירז';
+            appData.startDate = document.getElementById('settingsStartDate').value || '2023-12-21';
+            saveData(appData);
+            updateNames();
+            updateCounter();
+            closeSettings();
+        }
+
+        function updateNames() {
+            document.getElementById('name1').textContent = appData.name1;
+            document.getElementById('name2').textContent = appData.name2;
+            document.title = `Love Dashboard - ${appData.name1} ו${appData.name2}`;
+        }
+
+        // ==================== Counter ====================
+        function updateCounter() {
+            const startDate = new Date(appData.startDate);
+            const now = new Date();
+
+            // Calculate total days
+            const diffTime = Math.abs(now - startDate);
+            const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            // Calculate years, months, days
+            let years = now.getFullYear() - startDate.getFullYear();
+            let months = now.getMonth() - startDate.getMonth();
+            let days = now.getDate() - startDate.getDate();
+
+            if (days < 0) {
+                months--;
+                const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                days += lastMonth.getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            document.getElementById('years').textContent = years;
+            document.getElementById('months').textContent = months;
+            document.getElementById('days').textContent = days;
+            document.getElementById('totalDays').textContent = totalDays;
+
+            // Calculate days to next anniversary
+            let nextAnniversary = new Date(now.getFullYear(), startDate.getMonth(), startDate.getDate());
+            if (nextAnniversary <= now) {
+                nextAnniversary = new Date(now.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
+            }
+            const daysToAnniversary = Math.ceil((nextAnniversary - now) / (1000 * 60 * 60 * 24));
+            document.getElementById('daysToAnniversary').textContent = daysToAnniversary;
+
+            // Update display date
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('startDateDisplay').textContent = startDate.toLocaleDateString('he-IL', options);
+        }
+
+        // ==================== Timeline ====================
+        function renderTimeline() {
+            const container = document.getElementById('timelineContainer');
+            container.innerHTML = '';
+
+            // Sort by date
+            const sortedTimeline = [...appData.timeline].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            sortedTimeline.forEach((event, index) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item animate-on-scroll';
+
+                const date = new Date(event.date);
+                const formattedDate = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                item.innerHTML = `
+                    <div class="timeline-content">
+                        <div class="timeline-date">${formattedDate}</div>
+                        <h3 class="timeline-title">${event.title}</h3>
+                        <p class="timeline-desc">${event.desc}</p>
+                        ${event.image ? `<img src="${event.image}" class="timeline-image" alt="${event.title}">` : ''}
+                    </div>
+                `;
+
+                container.appendChild(item);
+            });
+
+            setupScrollAnimations();
+        }
+
+        function addTimelineEvent() {
+            document.getElementById('timelineModal').classList.add('active');
+            document.getElementById('timelineEventDate').value = '';
+            document.getElementById('timelineEventTitle').value = '';
+            document.getElementById('timelineEventDesc').value = '';
+            document.getElementById('timelineEventImage').value = '';
+        }
+
+        function closeTimelineModal() {
+            document.getElementById('timelineModal').classList.remove('active');
+        }
+
+        function saveTimelineEvent() {
+            const date = document.getElementById('timelineEventDate').value;
+            const title = document.getElementById('timelineEventTitle').value;
+            const desc = document.getElementById('timelineEventDesc').value;
+            const imageInput = document.getElementById('timelineEventImage');
+
+            if (!date || !title) {
+                alert('נא למלא תאריך וכותרת');
+                return;
+            }
+
+            const newEvent = { date, title, desc, image: '' };
+
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newEvent.image = e.target.result;
+                    appData.timeline.push(newEvent);
+                    saveData(appData);
+                    renderTimeline();
+                    closeTimelineModal();
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                appData.timeline.push(newEvent);
+                saveData(appData);
+                renderTimeline();
+                closeTimelineModal();
+            }
+        }
+
+        // ==================== Gallery ====================
+        let currentLightboxIndex = 0;
+
+        function renderGallery() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+
+            if (appData.gallery.length === 0) {
+                // Show placeholders
+                for (let i = 0; i < 6; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item gallery-placeholder';
+                    item.innerHTML = `📷<span>העלה תמונה</span>`;
+                    item.onclick = () => document.getElementById('galleryUpload').click();
+                    grid.appendChild(item);
+                }
+            } else {
+                appData.gallery.forEach((src, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    item.innerHTML = `<img src="${src}" alt="תמונה ${index + 1}">`;
+                    item.onclick = () => openLightbox(index);
+                    grid.appendChild(item);
+                });
+            }
+        }
+
+        function handleGalleryUpload(event) {
+            const files = event.target.files;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    appData.gallery.push(e.target.result);
+                    saveData(appData);
+                    renderGallery();
+                    updatePhotoStat();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updatePhotoStat() {
+            const photoStat = appData.stats.find(s => s.label === 'תמונות');
+            if (photoStat) {
+                photoStat.value = appData.gallery.length;
+                saveData(appData);
+                renderStats();
+            }
+        }
+
+        function openLightbox(index) {
+            if (appData.gallery.length === 0) return;
+            currentLightboxIndex = index;
+            document.getElementById('lightboxImage').src = appData.gallery[index];
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function navigateLightbox(direction) {
+            currentLightboxIndex += direction;
+            if (currentLightboxIndex < 0) currentLightboxIndex = appData.gallery.length - 1;
+            if (currentLightboxIndex >= appData.gallery.length) currentLightboxIndex = 0;
+            document.getElementById('lightboxImage').src = appData.gallery[currentLightboxIndex];
+        }
+
+        // Keyboard navigation for lightbox
+        document.addEventListener('keydown', (e) => {
+            if (!document.getElementById('lightbox').classList.contains('active')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') navigateLightbox(-1);
+            if (e.key === 'ArrowLeft') navigateLightbox(1);
+        });
+
+        // ==================== Stats ====================
+        let currentEditStatIndex = -1;
+
+        function renderStats() {
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = '';
+
+            appData.stats.forEach((stat, index) => {
+                const card = document.createElement('div');
+                card.className = 'stat-card animate-on-scroll';
+                card.innerHTML = `
+                    <button class="stat-edit" onclick="editStat(${index})">✏️</button>
+                    <div class="stat-icon">${stat.icon}</div>
+                    <div class="stat-number">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                `;
+                grid.appendChild(card);
+            });
+
+            setupScrollAnimations();
+        }
+
+        function editStat(index) {
+            currentEditStatIndex = index;
+            document.getElementById('editModalTitle').textContent = `עריכת ${appData.stats[index].label}`;
+            document.getElementById('editModalInput').value = appData.stats[index].value;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function saveEditModal() {
+            const newValue = parseInt(document.getElementById('editModalInput').value) || 0;
+            appData.stats[currentEditStatIndex].value = newValue;
+            saveData(appData);
+            renderStats();
+            closeEditModal();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        // ==================== Bucket List ====================
+        function renderBucketList() {
+            const list = document.getElementById('bucketItems');
+            list.innerHTML = '';
+
+            appData.bucketList.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'bucket-item';
+                li.innerHTML = `
+                    <div class="bucket-checkbox ${item.completed ? 'checked' : ''}" onclick="toggleBucketItem(${index})">
+                        ${item.completed ? '✓' : ''}
+                    </div>
+                    <span class="bucket-text ${item.completed ? 'completed' : ''}">${item.text}</span>
+                    <button class="bucket-delete" onclick="deleteBucketItem(${index})">🗑️</button>
+                `;
+                list.appendChild(li);
+            });
+
+            updateBucketProgress();
+        }
+
+        function toggleBucketItem(index) {
+            appData.bucketList[index].completed = !appData.bucketList[index].completed;
+            saveData(appData);
+            renderBucketList();
+        }
+
+        function deleteBucketItem(index) {
+            appData.bucketList.splice(index, 1);
+            saveData(appData);
+            renderBucketList();
+        }
+
+        function addBucketItem() {
+            const input = document.getElementById('newBucketItem');
+            const text = input.value.trim();
+
+            if (text) {
+                appData.bucketList.push({ text, completed: false });
+                saveData(appData);
+                renderBucketList();
+                input.value = '';
+            }
+        }
+
+        // Enter key to add bucket item
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('newBucketItem').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addBucketItem();
+            });
+        });
+
+        function updateBucketProgress() {
+            const total = appData.bucketList.length;
+            const completed = appData.bucketList.filter(item => item.completed).length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('bucketPercent').textContent = percent;
+            document.getElementById('progressFill').style.width = `${percent}%`;
+        }
+
+        // ==================== Memory of the Week ====================
+        function renderMemory() {
+            const textEl = document.getElementById('memoryText');
+            const textareaEl = document.getElementById('memoryTextarea');
+            const imageEl = document.getElementById('memoryImage');
+            const placeholderEl = document.getElementById('memoryPlaceholder');
+
+            textEl.textContent = appData.memoryText || 'לחצו כאן כדי להוסיף את הזיכרון המיוחד שלכם מהשבוע...';
+            textareaEl.value = appData.memoryText || '';
+
+            if (appData.memoryImage) {
+                imageEl.src = appData.memoryImage;
+                imageEl.style.display = 'block';
+                placeholderEl.style.display = 'none';
+            } else {
+                imageEl.style.display = 'none';
+                placeholderEl.style.display = 'flex';
+            }
+        }
+
+        function handleMemoryUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    appData.memoryImage = e.target.result;
+                    saveData(appData);
+                    renderMemory();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveMemoryText() {
+            const text = document.getElementById('memoryTextarea').value;
+            appData.memoryText = text;
+            document.getElementById('memoryText').textContent = text || 'לחצו כאן כדי להוסיף את הזיכרון המיוחד שלכם מהשבוע...';
+            saveData(appData);
+        }
+
+        // ==================== Scroll Animations ====================
+        function setupScrollAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Close modals on outside click
+        document.getElementById('settingsPanel').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('settingsPanel')) closeSettings();
+        });
+
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('lightbox')) closeLightbox();
+        });
+
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('editModal')) closeEditModal();
+        });
+
+        document.getElementById('timelineModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('timelineModal')) closeTimelineModal();
+        });
+    </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../service-worker.js');
+    }
+    </script>
+</body>
+</html>
