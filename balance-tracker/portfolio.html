@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>תיק נכסים</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Heebo', sans-serif; transition: background 0.3s; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); transition: all 0.3s; }
+
+        /* Dark mode */
+        .dark .gradient-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+        .dark .card { background: rgba(30,30,50,0.95); color: #e0e0e0; }
+        .dark .card h2, .dark .card h3 { color: #f0f0f0; }
+        .dark .card input, .dark .card select { background: #2a2a4a; border-color: #3a3a5a; color: #e0e0e0; }
+        .dark .card .text-gray-500 { color: #aaa; }
+        .dark .card .text-gray-600 { color: #999; }
+        .dark .card .text-gray-700 { color: #ccc; }
+        .dark .card .border-gray-200 { border-color: #3a3a5a; }
+        .dark .category-btn { background: rgba(255,255,255,0.1); }
+        .dark .category-btn:hover { background: rgba(255,255,255,0.15); }
+        .dark .modal-content { background: #2a2a4a; color: #e0e0e0; }
+
+        .category-btn {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .category-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.3s;
+        }
+        .category-content.open {
+            max-height: 2000px;
+            padding-top: 1rem;
+        }
+        .category-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .sub-category {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .dark .sub-category {
+            background: rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <a href="index.html" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2">
+                → חזרה למעקב יתרות
+            </a>
+            <div class="text-center flex-1">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">תיק נכסים</h1>
+                <p class="text-white/80">ניהול כל הנכסים במקום אחד</p>
+            </div>
+            <button id="darkModeBtn" onclick="toggleDarkMode()" class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-xl transition-all" title="מצב כהה">
+                <span id="darkModeIcon">🌙</span>
+            </button>
+        </div>
+
+        <!-- Total Summary Card -->
+        <div class="card rounded-2xl shadow-xl p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">סיכום כולל</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="totalSummary">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- Categories Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <button onclick="openCategory('stocks')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">📈</div>
+                <h3 class="font-semibold text-gray-800">מניות</h3>
+                <p class="text-sm text-gray-500" id="stocks-total">₪0</p>
+            </button>
+                        <button onclick="openCategory('realestate')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">🏠</div>
+                <h3 class="font-semibold text-gray-800">נדל"ן</h3>
+                <p class="text-sm text-gray-500" id="realestate-total">₪0</p>
+            </button>
+            <button onclick="openCategory('salary')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">💰</div>
+                <h3 class="font-semibold text-gray-800">משכורת</h3>
+                <p class="text-sm text-gray-500" id="salary-total">₪0/חודש</p>
+            </button>
+            <button onclick="openCategory('monthly')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">📅</div>
+                <h3 class="font-semibold text-gray-800">חודשי</h3>
+                <p class="text-sm text-gray-500" id="monthly-total">₪0</p>
+            </button>
+            <button onclick="openCategory('savings')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">🏦</div>
+                <h3 class="font-semibold text-gray-800">חסכונות</h3>
+                <p class="text-sm text-gray-500" id="savings-total">₪0</p>
+            </button>
+            <button onclick="openCategory('physical')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">🚗</div>
+                <h3 class="font-semibold text-gray-800">רכוש פיזי</h3>
+                <p class="text-sm text-gray-500" id="physical-total">₪0</p>
+            </button>
+            <button onclick="openCategory('donations')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">❤️</div>
+                <h3 class="font-semibold text-gray-800">תרומות</h3>
+                <p class="text-sm text-gray-500" id="donations-total">₪0</p>
+            </button>
+            <button onclick="openCategory('other')" class="category-btn card rounded-2xl shadow-xl p-6 text-center">
+                <div class="category-icon">📋</div>
+                <h3 class="font-semibold text-gray-800">אחר</h3>
+                <p class="text-sm text-gray-500" id="other-total">₪0</p>
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 text-white/60 text-sm">
+            <p>הנתונים נשמרים אוטומטית בדפדפן</p>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="modal-content bg-white rounded-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modalTitle" class="text-2xl font-bold text-gray-800"></h2>
+                <button onclick="closeCategory()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Pie Chart Modal -->
+    <div id="pieChartModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">📊 חלוקת נכסים</h2>
+                <button onclick="closePieChart()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl">&times;</button>
+            </div>
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1" style="max-height: 350px;">
+                    <canvas id="assetsPieChart"></canvas>
+                </div>
+                <div id="pieChartLegend" class="md:w-48 space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Data Management ====================
+        const defaultData = {
+            stocks: {
+                ib: 0, // Interactive Brokers total
+                hapoalim: 0, // Bank Hapoalim total
+                binance: 0 // Binance total
+            },
+            crypto: [], // { id, coin, quantity, value }
+            realestate: [], // { id, address, value, rentalIncome }
+            salary: [], // { id, year, monthlyAmount }
+            monthly: [], // { id, description, amount, type } - type: rent/recurring/other
+            savings: [], // { id, accountName, amount, bank }
+            physical: [], // { id, name, value, category }
+            donations: [], // { id, amount, recipient, date }
+            other: [] // { id, description, amount, date }
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem('portfolioData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Merge with defaults to handle new fields
+                const merged = { ...defaultData, ...parsed };
+
+                // Migrate old stocks format (arrays to numbers)
+                if (merged.stocks) {
+                    if (Array.isArray(merged.stocks.ib)) {
+                        merged.stocks.ib = merged.stocks.ib.reduce((sum, s) => sum + (s.currentValue || 0), 0);
+                    }
+                    if (Array.isArray(merged.stocks.hapoalim)) {
+                        merged.stocks.hapoalim = merged.stocks.hapoalim.reduce((sum, s) => sum + (s.amount || 0), 0);
+                    }
+                }
+
+                // Ensure stocks object exists with correct format
+                if (!merged.stocks || typeof merged.stocks !== 'object') {
+                    merged.stocks = { ib: 0, hapoalim: 0 };
+                }
+                if (typeof merged.stocks.ib !== 'number') merged.stocks.ib = 0;
+                if (typeof merged.stocks.hapoalim !== 'number') merged.stocks.hapoalim = 0;
+                if (typeof merged.stocks.binance !== 'number') merged.stocks.binance = 0;
+
+                return merged;
+            }
+            return defaultData;
+        }
+
+        function saveData() {
+            localStorage.setItem('portfolioData', JSON.stringify(data));
+            updateTotals();
+        }
+
+        let data = loadData();
+        let currentCategory = null;
+
+        // ==================== Dark Mode ====================
+        let darkMode = localStorage.getItem('darkMode') === 'true';
+        if (darkMode) document.body.classList.add('dark');
+        updateDarkModeIcon();
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('dark', darkMode);
+            localStorage.setItem('darkMode', darkMode);
+            updateDarkModeIcon();
+        }
+
+        function updateDarkModeIcon() {
+            document.getElementById('darkModeIcon').textContent = darkMode ? '☀️' : '🌙';
+        }
+
+        // ==================== Formatting ====================
+        function formatCurrency(n) {
+            return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 }).format(n);
+        }
+
+        // ==================== Totals ====================
+        function calculateTotals() {
+            const totals = {
+                stocks: 0,
+                crypto: 0,
+                realestate: 0,
+                salary: 0,
+                salaryMonthly: 0,
+                monthly: 0,
+                savings: 0,
+                physical: 0,
+                donations: 0,
+                other: 0
+            };
+
+            // Stocks
+            const ibAmount = typeof data.stocks.ib === 'number' ? data.stocks.ib : 0;
+            const hapoalimAmount = typeof data.stocks.hapoalim === 'number' ? data.stocks.hapoalim : 0;
+            const binanceAmount = typeof data.stocks.binance === 'number' ? data.stocks.binance : 0;
+            totals.stocks = ibAmount + hapoalimAmount + binanceAmount;
+
+            // Crypto
+            data.crypto.forEach(c => totals.crypto += c.value || 0);
+
+            // Real Estate
+            data.realestate.forEach(r => totals.realestate += r.value || 0);
+
+            // Salary (latest year entered)
+            const sortedSalaries = [...data.salary].sort((a, b) => b.year - a.year);
+            const latestSalary = sortedSalaries[0];
+            totals.salary = latestSalary ? latestSalary.monthlyAmount * 12 : 0;
+            totals.salaryMonthly = latestSalary ? latestSalary.monthlyAmount : 0;
+
+            // Monthly income (other recurring)
+            data.monthly.forEach(m => totals.monthly += m.amount || 0);
+
+            // Savings
+            data.savings.forEach(s => totals.savings += s.amount || 0);
+
+            // Physical assets
+            data.physical.forEach(p => totals.physical += p.value || 0);
+
+            // Donations
+            data.donations.forEach(d => totals.donations += d.amount || 0);
+
+            // Other
+            data.other.forEach(o => totals.other += o.amount || 0);
+
+            return totals;
+        }
+
+        function updateTotals() {
+            const totals = calculateTotals();
+
+            // Update category cards
+            document.getElementById('stocks-total').textContent = formatCurrency(totals.stocks);
+            document.getElementById('realestate-total').textContent = formatCurrency(totals.realestate);
+            document.getElementById('salary-total').textContent = formatCurrency(totals.salaryMonthly) + '/חודש';
+            document.getElementById('monthly-total').textContent = formatCurrency(totals.monthly) + '/חודש';
+            document.getElementById('savings-total').textContent = formatCurrency(totals.savings);
+            document.getElementById('physical-total').textContent = formatCurrency(totals.physical);
+            document.getElementById('donations-total').textContent = formatCurrency(totals.donations);
+            document.getElementById('other-total').textContent = formatCurrency(totals.other);
+
+            // Update total summary
+            const totalAssets = totals.stocks + totals.realestate + totals.savings + totals.physical;
+            const totalIncome = totals.monthly * 12;
+
+            document.getElementById('totalSummary').innerHTML = `
+                <div onclick="openPieChart()" class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl text-center cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all">
+                    <div class="text-sm text-gray-500">סה"כ נכסים</div>
+                    <div class="text-xl font-bold text-purple-600">${formatCurrency(totalAssets)}</div>
+                    <div class="text-xs text-purple-400 mt-1">לחץ לתרשים</div>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl text-center">
+                    <div class="text-sm text-gray-500">חודשי</div>
+                    <div class="text-xl font-bold text-green-600">${formatCurrency(totals.monthly)}</div>
+                    <div class="text-xs text-gray-400">(${formatCurrency(totals.monthly * 12)}/שנה)</div>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
+                    <div class="text-sm text-gray-500">חסכונות</div>
+                    <div class="text-xl font-bold text-blue-600">${formatCurrency(totals.savings)}</div>
+                </div>
+                <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl text-center">
+                    <div class="text-sm text-gray-500">תרומות</div>
+                    <div class="text-xl font-bold text-red-600">${formatCurrency(totals.donations)}</div>
+                </div>
+            `;
+        }
+
+        // ==================== Category Modal ====================
+        function openCategory(category) {
+            currentCategory = category;
+            const modal = document.getElementById('categoryModal');
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+
+            const titles = {
+                stocks: '📈 מניות',
+                crypto: '₿ קריפטו',
+                realestate: '🏠 נדל"ן',
+                salary: '💰 משכורת',
+                monthly: '📅 הכנסות חודשיות',
+                savings: '🏦 חסכונות',
+                physical: '🚗 רכוש פיזי',
+                donations: '❤️ תרומות',
+                other: '📋 אחר'
+            };
+
+            title.textContent = titles[category];
+            content.innerHTML = getCategoryContent(category);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCategory() {
+            const modal = document.getElementById('categoryModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            currentCategory = null;
+        }
+
+        // Close on outside click
+        document.getElementById('categoryModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('categoryModal')) {
+                closeCategory();
+            }
+        });
+
+        // ==================== Category Content Generators ====================
+        function getCategoryContent(category) {
+            switch(category) {
+                case 'stocks': return getStocksContent();
+                case 'crypto': return getCryptoContent();
+                case 'realestate': return getRealEstateContent();
+                case 'salary': return getSalaryContent();
+                case 'monthly': return getMonthlyContent();
+                case 'savings': return getSavingsContent();
+                case 'physical': return getPhysicalContent();
+                case 'donations': return getDonationsContent();
+                case 'other': return getOtherContent();
+                default: return '';
+            }
+        }
+
+        // ==================== STOCKS ====================
+        function getStocksContent() {
+            const total = (data.stocks.ib || 0) + (data.stocks.hapoalim || 0) + (data.stocks.binance || 0);
+            return `
+                <!-- Interactive Brokers -->
+                <div class="sub-category">
+                    <h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
+                        <span class="bg-red-500 text-white px-2 py-1 rounded text-sm">IB</span>
+                        Interactive Brokers
+                    </h3>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1">
+                            <input type="number" id="ib-amount" placeholder="סה״כ שווי התיק" value="${data.stocks.ib || ''}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg">
+                        </div>
+                        <button onclick="saveIBAmount()" class="bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition">שמור</button>
+                    </div>
+                    <p class="text-2xl font-bold text-center mt-4 text-red-600">${formatCurrency(data.stocks.ib || 0)}</p>
+                </div>
+
+                <!-- Bank Hapoalim -->
+                <div class="sub-category">
+                    <h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
+                        <span class="bg-blue-600 text-white px-2 py-1 rounded text-sm">🏦</span>
+                        בנק הפועלים
+                    </h3>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1">
+                            <input type="number" id="hapoalim-amount" placeholder="סה״כ שווי התיק" value="${data.stocks.hapoalim || ''}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg">
+                        </div>
+                        <button onclick="saveHapoalimAmount()" class="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition">שמור</button>
+                    </div>
+                    <p class="text-2xl font-bold text-center mt-4 text-blue-600">${formatCurrency(data.stocks.hapoalim || 0)}</p>
+                </div>
+
+                <!-- Binance -->
+                <div class="sub-category">
+                    <h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
+                        <span class="bg-yellow-500 text-black px-2 py-1 rounded text-sm">₿</span>
+                        Binance
+                    </h3>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1">
+                            <input type="number" id="binance-amount" placeholder="סה״כ שווי התיק" value="${data.stocks.binance || ''}" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-lg">
+                        </div>
+                        <button onclick="saveBinanceAmount()" class="bg-yellow-500 text-black px-6 py-3 rounded-xl hover:bg-yellow-600 transition">שמור</button>
+                    </div>
+                    <p class="text-2xl font-bold text-center mt-4 text-yellow-600">${formatCurrency(data.stocks.binance || 0)}</p>
+                </div>
+
+                <!-- Total -->
+                <div class="text-center mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                    <p class="text-gray-500 mb-1">סה״כ מניות</p>
+                    <p class="text-3xl font-bold text-purple-600">${formatCurrency(total)}</p>
+                </div>
+            `;
+        }
+
+        function saveIBAmount() {
+            const amount = parseFloat(document.getElementById('ib-amount').value) || 0;
+            data.stocks.ib = amount;
+            saveData();
+            openCategory('stocks'); // Refresh
+        }
+
+        function saveHapoalimAmount() {
+            const amount = parseFloat(document.getElementById('hapoalim-amount').value) || 0;
+            data.stocks.hapoalim = amount;
+            saveData();
+            openCategory('stocks'); // Refresh
+        }
+
+        function saveBinanceAmount() {
+            const amount = parseFloat(document.getElementById('binance-amount').value) || 0;
+            data.stocks.binance = amount;
+            saveData();
+            openCategory('stocks'); // Refresh
+        }
+
+        // ==================== CRYPTO ====================
+        function getCryptoContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="text" id="crypto-coin" placeholder="שם מטבע (BTC, ETH...)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="crypto-quantity" placeholder="כמות" step="any" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="crypto-value" placeholder="שווי בש״ח" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                </div>
+                <button onclick="addCrypto()" class="bg-orange-500 text-white px-4 py-2 rounded-xl hover:bg-orange-600 transition mb-4">הוסף מטבע</button>
+                <div id="crypto-table">${renderCryptoTable()}</div>
+            `;
+        }
+
+        function renderCryptoTable() {
+            if (data.crypto.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין מטבעות קריפטו עדיין</p>';
+            }
+            let total = 0;
+            const rows = data.crypto.map(c => {
+                total += c.value || 0;
+                return `
+                    <tr class="border-b">
+                        <td class="py-2 font-semibold">${c.coin}</td>
+                        <td class="py-2">${c.quantity}</td>
+                        <td class="py-2">${formatCurrency(c.value)}</td>
+                        <td class="py-2"><button onclick="deleteCrypto(${c.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">מטבע</th>
+                        <th class="text-right py-2">כמות</th>
+                        <th class="text-right py-2">שווי</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td colspan="2" class="py-2">סה"כ</td>
+                        <td class="py-2">${formatCurrency(total)}</td>
+                        <td></td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addCrypto() {
+            const coin = document.getElementById('crypto-coin').value.toUpperCase();
+            const quantity = parseFloat(document.getElementById('crypto-quantity').value);
+            const value = parseFloat(document.getElementById('crypto-value').value);
+
+            if (!coin || isNaN(quantity)) return alert('נא למלא שם מטבע וכמות');
+
+            data.crypto.push({ id: Date.now(), coin, quantity, value: value || 0 });
+            saveData();
+            document.getElementById('crypto-table').innerHTML = renderCryptoTable();
+            document.getElementById('crypto-coin').value = '';
+            document.getElementById('crypto-quantity').value = '';
+            document.getElementById('crypto-value').value = '';
+        }
+
+        function deleteCrypto(id) {
+            data.crypto = data.crypto.filter(c => c.id !== id);
+            saveData();
+            document.getElementById('crypto-table').innerHTML = renderCryptoTable();
+        }
+
+        // ==================== REAL ESTATE ====================
+        function getRealEstateContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="text" id="re-address" placeholder="כתובת" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="re-value" placeholder="שווי נכס" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="re-rental" placeholder="הכנסה משכירות (חודשי)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                </div>
+                <button onclick="addRealEstate()" class="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition mb-4">הוסף נכס</button>
+                <div id="re-table">${renderRealEstateTable()}</div>
+            `;
+        }
+
+        function renderRealEstateTable() {
+            if (data.realestate.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין נכסי נדל"ן עדיין</p>';
+            }
+            let totalValue = 0, totalRental = 0;
+            const rows = data.realestate.map(r => {
+                totalValue += r.value || 0;
+                totalRental += r.rentalIncome || 0;
+                return `
+                    <tr class="border-b">
+                        <td class="py-2">${r.address}</td>
+                        <td class="py-2">${formatCurrency(r.value)}</td>
+                        <td class="py-2">${formatCurrency(r.rentalIncome)}/חודש</td>
+                        <td class="py-2"><button onclick="deleteRealEstate(${r.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">כתובת</th>
+                        <th class="text-right py-2">שווי</th>
+                        <th class="text-right py-2">הכנסה משכירות</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td class="py-2">סה"כ</td>
+                        <td class="py-2">${formatCurrency(totalValue)}</td>
+                        <td class="py-2">${formatCurrency(totalRental)}/חודש</td>
+                        <td></td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addRealEstate() {
+            const address = document.getElementById('re-address').value;
+            const value = parseFloat(document.getElementById('re-value').value);
+            const rentalIncome = parseFloat(document.getElementById('re-rental').value);
+
+            if (!address) return alert('נא למלא כתובת');
+
+            data.realestate.push({ id: Date.now(), address, value: value || 0, rentalIncome: rentalIncome || 0 });
+            saveData();
+            document.getElementById('re-table').innerHTML = renderRealEstateTable();
+            document.getElementById('re-address').value = '';
+            document.getElementById('re-value').value = '';
+            document.getElementById('re-rental').value = '';
+        }
+
+        function deleteRealEstate(id) {
+            data.realestate = data.realestate.filter(r => r.id !== id);
+            saveData();
+            document.getElementById('re-table').innerHTML = renderRealEstateTable();
+        }
+
+        // ==================== SALARY ====================
+        function getSalaryContent() {
+            const currentYear = new Date().getFullYear();
+            const years = [];
+            for (let y = 2023; y <= currentYear + 1; y++) {
+                years.push(y);
+            }
+            const yearOptions = years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <select id="salary-year" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                        ${yearOptions}
+                    </select>
+                    <input type="number" id="salary-amount" placeholder="משכורת חודשית (נטו)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                </div>
+                <button onclick="addSalary()" class="bg-yellow-500 text-white px-4 py-2 rounded-xl hover:bg-yellow-600 transition mb-4">הוסף/עדכן משכורת</button>
+                <div id="salary-table">${renderSalaryTable()}</div>
+            `;
+        }
+
+        function renderSalaryTable() {
+            if (data.salary.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין נתוני משכורת עדיין</p>';
+            }
+            const sorted = [...data.salary].sort((a, b) => b.year - a.year);
+            const rows = sorted.map((s, i) => {
+                const prevYear = sorted[i + 1];
+                let change = '';
+                if (prevYear) {
+                    const diff = s.monthlyAmount - prevYear.monthlyAmount;
+                    const pct = ((diff / prevYear.monthlyAmount) * 100).toFixed(1);
+                    const cls = diff >= 0 ? 'text-green-600' : 'text-red-600';
+                    change = `<span class="${cls}">${diff >= 0 ? '▲' : '▼'} ${pct}%</span>`;
+                }
+                return `
+                    <tr class="border-b">
+                        <td class="py-2 font-semibold">${s.year}</td>
+                        <td class="py-2">${formatCurrency(s.monthlyAmount)}</td>
+                        <td class="py-2">${formatCurrency(s.monthlyAmount * 12)}</td>
+                        <td class="py-2">${change}</td>
+                        <td class="py-2"><button onclick="deleteSalary(${s.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">שנה</th>
+                        <th class="text-right py-2">חודשי</th>
+                        <th class="text-right py-2">שנתי</th>
+                        <th class="text-right py-2">שינוי</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        }
+
+        function addSalary() {
+            const year = parseInt(document.getElementById('salary-year').value);
+            const monthlyAmount = parseFloat(document.getElementById('salary-amount').value);
+
+            if (isNaN(monthlyAmount)) return alert('נא למלא סכום משכורת');
+
+            // Update existing or add new
+            const existing = data.salary.find(s => s.year === year);
+            if (existing) {
+                existing.monthlyAmount = monthlyAmount;
+            } else {
+                data.salary.push({ id: Date.now(), year, monthlyAmount });
+            }
+            saveData();
+            document.getElementById('salary-table').innerHTML = renderSalaryTable();
+            document.getElementById('salary-amount').value = '';
+        }
+
+        function deleteSalary(id) {
+            data.salary = data.salary.filter(s => s.id !== id);
+            saveData();
+            document.getElementById('salary-table').innerHTML = renderSalaryTable();
+        }
+
+        // ==================== MONTHLY ====================
+        function getMonthlyContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="text" id="monthly-desc" placeholder="תיאור (משכורת, שכירות...)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="monthly-amount" placeholder="סכום חודשי (נטו)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <select id="monthly-type" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                        <option value="משכורת">משכורת</option>
+                        <option value="שכר דירה">שכר דירה</option>
+                        <option value="הוראת קבע">הוראת קבע</option>
+                        <option value="אחר">אחר</option>
+                    </select>
+                </div>
+                <button onclick="addMonthly()" class="bg-yellow-500 text-white px-4 py-2 rounded-xl hover:bg-yellow-600 transition mb-4">הוסף הכנסה חודשית</button>
+                <div id="monthly-table">${renderMonthlyTable()}</div>
+            `;
+        }
+
+        function renderMonthlyTable() {
+            if (data.monthly.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין הכנסות חודשיות עדיין</p>';
+            }
+            let total = 0;
+            const rows = data.monthly.map(m => {
+                total += m.amount || 0;
+                const typeColors = {
+                    'משכורת': 'bg-green-100 text-green-700',
+                    'שכר דירה': 'bg-blue-100 text-blue-700',
+                    'הוראת קבע': 'bg-purple-100 text-purple-700',
+                    'אחר': 'bg-gray-100 text-gray-700'
+                };
+                const colorClass = typeColors[m.type] || typeColors['אחר'];
+                return `
+                    <tr class="border-b">
+                        <td class="py-2">${m.description}</td>
+                        <td class="py-2">${formatCurrency(m.amount)}</td>
+                        <td class="py-2"><span class="px-2 py-1 rounded-full text-xs ${colorClass}">${m.type}</span></td>
+                        <td class="py-2"><button onclick="deleteMonthly(${m.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">תיאור</th>
+                        <th class="text-right py-2">סכום חודשי</th>
+                        <th class="text-right py-2">סוג</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td class="py-2">סה"כ חודשי</td>
+                        <td class="py-2">${formatCurrency(total)}</td>
+                        <td class="py-2 text-gray-500">(${formatCurrency(total * 12)}/שנה)</td>
+                        <td></td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addMonthly() {
+            const description = document.getElementById('monthly-desc').value;
+            const amount = parseFloat(document.getElementById('monthly-amount').value);
+            const type = document.getElementById('monthly-type').value;
+
+            if (!description || isNaN(amount)) return alert('נא למלא תיאור וסכום');
+
+            data.monthly.push({ id: Date.now(), description, amount, type });
+            saveData();
+            document.getElementById('monthly-table').innerHTML = renderMonthlyTable();
+            document.getElementById('monthly-desc').value = '';
+            document.getElementById('monthly-amount').value = '';
+        }
+
+        function deleteMonthly(id) {
+            data.monthly = data.monthly.filter(m => m.id !== id);
+            saveData();
+            document.getElementById('monthly-table').innerHTML = renderMonthlyTable();
+        }
+
+        // ==================== SAVINGS ====================
+        function getSavingsContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="text" id="savings-name" placeholder="שם חשבון" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="savings-amount" placeholder="סכום" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="text" id="savings-bank" placeholder="בנק" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                </div>
+                <button onclick="addSavings()" class="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition mb-4">הוסף חיסכון</button>
+                <div id="savings-table">${renderSavingsTable()}</div>
+            `;
+        }
+
+        function renderSavingsTable() {
+            if (data.savings.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין חסכונות עדיין</p>';
+            }
+            let total = 0;
+            const rows = data.savings.map(s => {
+                total += s.amount || 0;
+                return `
+                    <tr class="border-b">
+                        <td class="py-2">${s.accountName}</td>
+                        <td class="py-2">${formatCurrency(s.amount)}</td>
+                        <td class="py-2">${s.bank}</td>
+                        <td class="py-2"><button onclick="deleteSavings(${s.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">שם חשבון</th>
+                        <th class="text-right py-2">סכום</th>
+                        <th class="text-right py-2">בנק</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td class="py-2">סה"כ</td>
+                        <td class="py-2">${formatCurrency(total)}</td>
+                        <td colspan="2"></td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addSavings() {
+            const accountName = document.getElementById('savings-name').value;
+            const amount = parseFloat(document.getElementById('savings-amount').value);
+            const bank = document.getElementById('savings-bank').value;
+
+            if (!accountName || isNaN(amount)) return alert('נא למלא שם חשבון וסכום');
+
+            data.savings.push({ id: Date.now(), accountName, amount, bank: bank || '' });
+            saveData();
+            document.getElementById('savings-table').innerHTML = renderSavingsTable();
+            document.getElementById('savings-name').value = '';
+            document.getElementById('savings-amount').value = '';
+            document.getElementById('savings-bank').value = '';
+        }
+
+        function deleteSavings(id) {
+            data.savings = data.savings.filter(s => s.id !== id);
+            saveData();
+            document.getElementById('savings-table').innerHTML = renderSavingsTable();
+        }
+
+        // ==================== PHYSICAL ASSETS ====================
+        function getPhysicalContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="text" id="physical-name" placeholder="שם הפריט (רכב, שעון...)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="physical-value" placeholder="שווי משוער" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <select id="physical-category" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                        <option value="רכב">רכב</option>
+                        <option value="תכשיטים">תכשיטים</option>
+                        <option value="אלקטרוניקה">אלקטרוניקה</option>
+                        <option value="ריהוט">ריהוט</option>
+                        <option value="אמנות">אמנות</option>
+                        <option value="אחר">אחר</option>
+                    </select>
+                </div>
+                <button onclick="addPhysical()" class="bg-teal-500 text-white px-4 py-2 rounded-xl hover:bg-teal-600 transition mb-4">הוסף פריט</button>
+                <div id="physical-table">${renderPhysicalTable()}</div>
+            `;
+        }
+
+        function renderPhysicalTable() {
+            if (!data.physical || data.physical.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין פריטים עדיין</p>';
+            }
+            let total = 0;
+            const rows = data.physical.map(p => {
+                total += p.value || 0;
+                const categoryColors = {
+                    'רכב': 'bg-blue-100 text-blue-700',
+                    'תכשיטים': 'bg-yellow-100 text-yellow-700',
+                    'אלקטרוניקה': 'bg-purple-100 text-purple-700',
+                    'ריהוט': 'bg-orange-100 text-orange-700',
+                    'אמנות': 'bg-pink-100 text-pink-700',
+                    'אחר': 'bg-gray-100 text-gray-700'
+                };
+                const colorClass = categoryColors[p.category] || categoryColors['אחר'];
+                return `
+                    <tr class="border-b">
+                        <td class="py-2">${p.name}</td>
+                        <td class="py-2">${formatCurrency(p.value)}</td>
+                        <td class="py-2"><span class="px-2 py-1 rounded-full text-xs ${colorClass}">${p.category}</span></td>
+                        <td class="py-2"><button onclick="deletePhysical(${p.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">פריט</th>
+                        <th class="text-right py-2">שווי</th>
+                        <th class="text-right py-2">קטגוריה</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td class="py-2">סה"כ</td>
+                        <td class="py-2">${formatCurrency(total)}</td>
+                        <td colspan="2"></td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addPhysical() {
+            const name = document.getElementById('physical-name').value;
+            const value = parseFloat(document.getElementById('physical-value').value);
+            const category = document.getElementById('physical-category').value;
+
+            if (!name || isNaN(value)) return alert('נא למלא שם פריט ושווי');
+
+            if (!data.physical) data.physical = [];
+            data.physical.push({ id: Date.now(), name, value, category });
+            saveData();
+            document.getElementById('physical-table').innerHTML = renderPhysicalTable();
+            document.getElementById('physical-name').value = '';
+            document.getElementById('physical-value').value = '';
+        }
+
+        function deletePhysical(id) {
+            data.physical = data.physical.filter(p => p.id !== id);
+            saveData();
+            document.getElementById('physical-table').innerHTML = renderPhysicalTable();
+        }
+
+        // ==================== DONATIONS ====================
+        function getDonationsContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="number" id="donation-amount" placeholder="סכום" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="text" id="donation-recipient" placeholder="למי (ארגון/מטרה)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="date" id="donation-date" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                </div>
+                <button onclick="addDonation()" class="bg-pink-500 text-white px-4 py-2 rounded-xl hover:bg-pink-600 transition mb-4">הוסף תרומה</button>
+                <div id="donations-table">${renderDonationsTable()}</div>
+            `;
+        }
+
+        function renderDonationsTable() {
+            if (data.donations.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין תרומות עדיין</p>';
+            }
+            let total = 0;
+            const sorted = [...data.donations].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const rows = sorted.map(d => {
+                total += d.amount || 0;
+                const dateStr = d.date ? new Date(d.date).toLocaleDateString('he-IL') : '-';
+                return `
+                    <tr class="border-b">
+                        <td class="py-2">${formatCurrency(d.amount)}</td>
+                        <td class="py-2">${d.recipient}</td>
+                        <td class="py-2">${dateStr}</td>
+                        <td class="py-2"><button onclick="deleteDonation(${d.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">סכום</th>
+                        <th class="text-right py-2">למי</th>
+                        <th class="text-right py-2">תאריך</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td class="py-2">${formatCurrency(total)}</td>
+                        <td colspan="3" class="py-2">סה"כ תרומות</td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addDonation() {
+            const amount = parseFloat(document.getElementById('donation-amount').value);
+            const recipient = document.getElementById('donation-recipient').value;
+            const date = document.getElementById('donation-date').value;
+
+            if (isNaN(amount) || !recipient) return alert('נא למלא סכום ולמי');
+
+            data.donations.push({ id: Date.now(), amount, recipient, date: date || new Date().toISOString().split('T')[0] });
+            saveData();
+            document.getElementById('donations-table').innerHTML = renderDonationsTable();
+            document.getElementById('donation-amount').value = '';
+            document.getElementById('donation-recipient').value = '';
+            document.getElementById('donation-date').value = '';
+        }
+
+        function deleteDonation(id) {
+            data.donations = data.donations.filter(d => d.id !== id);
+            saveData();
+            document.getElementById('donations-table').innerHTML = renderDonationsTable();
+        }
+
+        // ==================== OTHER ====================
+        function getOtherContent() {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input type="text" id="other-desc" placeholder="תיאור (בונוס, מתנה...)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="number" id="other-amount" placeholder="סכום" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="date" id="other-date" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                </div>
+                <button onclick="addOther()" class="bg-gray-600 text-white px-4 py-2 rounded-xl hover:bg-gray-700 transition mb-4">הוסף</button>
+                <div id="other-table">${renderOtherTable()}</div>
+            `;
+        }
+
+        function renderOtherTable() {
+            if (data.other.length === 0) {
+                return '<p class="text-gray-400 text-center py-4">אין רשומות עדיין</p>';
+            }
+            let total = 0;
+            const sorted = [...data.other].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const rows = sorted.map(o => {
+                total += o.amount || 0;
+                const dateStr = o.date ? new Date(o.date).toLocaleDateString('he-IL') : '-';
+                return `
+                    <tr class="border-b">
+                        <td class="py-2">${o.description}</td>
+                        <td class="py-2">${formatCurrency(o.amount)}</td>
+                        <td class="py-2">${dateStr}</td>
+                        <td class="py-2"><button onclick="deleteOther(${o.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
+                    </tr>
+                `;
+            }).join('');
+            return `
+                <table class="w-full">
+                    <thead><tr class="border-b-2 text-gray-500">
+                        <th class="text-right py-2">תיאור</th>
+                        <th class="text-right py-2">סכום</th>
+                        <th class="text-right py-2">תאריך</th>
+                        <th class="py-2"></th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr class="font-bold border-t-2">
+                        <td class="py-2">סה"כ</td>
+                        <td class="py-2">${formatCurrency(total)}</td>
+                        <td colspan="2"></td>
+                    </tr></tfoot>
+                </table>
+            `;
+        }
+
+        function addOther() {
+            const description = document.getElementById('other-desc').value;
+            const amount = parseFloat(document.getElementById('other-amount').value);
+            const date = document.getElementById('other-date').value;
+
+            if (!description || isNaN(amount)) return alert('נא למלא תיאור וסכום');
+
+            data.other.push({ id: Date.now(), description, amount, date: date || new Date().toISOString().split('T')[0] });
+            saveData();
+            document.getElementById('other-table').innerHTML = renderOtherTable();
+            document.getElementById('other-desc').value = '';
+            document.getElementById('other-amount').value = '';
+            document.getElementById('other-date').value = '';
+        }
+
+        function deleteOther(id) {
+            data.other = data.other.filter(o => o.id !== id);
+            saveData();
+            document.getElementById('other-table').innerHTML = renderOtherTable();
+        }
+
+        // ==================== Pie Chart ====================
+        let pieChart = null;
+
+        function openPieChart() {
+            const modal = document.getElementById('pieChartModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderPieChart();
+        }
+
+        function closePieChart() {
+            const modal = document.getElementById('pieChartModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (pieChart) {
+                pieChart.destroy();
+                pieChart = null;
+            }
+        }
+
+        document.getElementById('pieChartModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('pieChartModal')) {
+                closePieChart();
+            }
+        });
+
+        function renderPieChart() {
+            const totals = calculateTotals();
+
+            // Prepare data for pie chart (only assets with value > 0)
+            const assetData = [
+                { label: 'מניות', value: totals.stocks, color: '#8b5cf6' },
+                { label: 'נדל"ן', value: totals.realestate, color: '#10b981' },
+                { label: 'חסכונות', value: totals.savings, color: '#3b82f6' },
+                { label: 'רכוש פיזי', value: totals.physical, color: '#f59e0b' }
+            ].filter(item => item.value > 0);
+
+            const totalAssets = assetData.reduce((sum, item) => sum + item.value, 0);
+
+            // Create legend
+            const legendHtml = assetData.map(item => {
+                const pct = totalAssets > 0 ? ((item.value / totalAssets) * 100).toFixed(1) : 0;
+                return `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded-full" style="background-color: ${item.color}"></div>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">${item.label}</span>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm font-bold text-gray-800 dark:text-white">${pct}%</div>
+                            <div class="text-xs text-gray-500">${formatCurrency(item.value)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('pieChartLegend').innerHTML = legendHtml;
+
+            // Create pie chart
+            const ctx = document.getElementById('assetsPieChart').getContext('2d');
+
+            if (pieChart) {
+                pieChart.destroy();
+            }
+
+            pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: assetData.map(item => item.label),
+                    datasets: [{
+                        data: assetData.map(item => item.value),
+                        backgroundColor: assetData.map(item => item.color),
+                        borderWidth: 3,
+                        borderColor: darkMode ? '#1f2937' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const pct = totalAssets > 0 ? ((value / totalAssets) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${formatCurrency(value)} (${pct}%)`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        // ==================== Initialize ====================
+        updateTotals();
+    </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js');
+    }
+    </script>
+</body>
+</html>
