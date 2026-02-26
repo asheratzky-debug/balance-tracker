@@ -143,8 +143,17 @@
             </div>
         </div>
 
-        <div class="text-center mt-6 text-white/60 text-sm">
-            <p>הנתונים נשמרים אוטומטית בדפדפן</p>
+        <div class="text-center mt-6">
+            <div class="flex justify-center gap-3 mb-3">
+                <button onclick="exportData()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-sm font-medium">
+                    📥 Export Data
+                </button>
+                <button onclick="importData()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-sm font-medium">
+                    📤 Import Data
+                </button>
+            </div>
+            <p id="exportImportFeedback" class="text-white font-medium mb-2 hidden"></p>
+            <p class="text-white/60 text-sm">הנתונים נשמרים אוטומטית בדפדפן</p>
         </div>
     </div>
 
@@ -1184,6 +1193,67 @@
         window.deleteMonthlyIncomeItem = deleteMonthlyIncomeItem;
         window.openAnnualReports = openAnnualReports;
         window.closeAnnualReports = closeAnnualReports;
+
+        // Export / Import
+        function exportData() {
+            const data = {
+                balanceEntries: JSON.parse(localStorage.getItem('balanceEntries') || '[]'),
+                monthlyIncomeByYear: JSON.parse(localStorage.getItem('monthlyIncomeByYear') || '{}'),
+                portfolioData: JSON.parse(localStorage.getItem('portfolioData') || 'null'),
+                loveDashboardData: JSON.parse(localStorage.getItem('loveDashboardData') || 'null'),
+                darkMode: localStorage.getItem('darkMode'),
+                exportDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'balance-tracker-backup.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showFeedbackMsg('הנתונים יוצאו בהצלחה!');
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (!data.balanceEntries || !Array.isArray(data.balanceEntries)) {
+                            alert('קובץ לא תקין - חסרים נתוני יתרות');
+                            return;
+                        }
+                        if (!confirm('פעולה זו תחליף את כל הנתונים הקיימים. להמשיך?')) return;
+                        localStorage.setItem('balanceEntries', JSON.stringify(data.balanceEntries));
+                        if (data.monthlyIncomeByYear) localStorage.setItem('monthlyIncomeByYear', JSON.stringify(data.monthlyIncomeByYear));
+                        if (data.portfolioData) localStorage.setItem('portfolioData', JSON.stringify(data.portfolioData));
+                        if (data.loveDashboardData) localStorage.setItem('loveDashboardData', JSON.stringify(data.loveDashboardData));
+                        if (data.darkMode != null) localStorage.setItem('darkMode', data.darkMode);
+                        showFeedbackMsg('הנתונים יובאו בהצלחה! מרענן...');
+                        setTimeout(() => location.reload(), 1500);
+                    } catch (err) {
+                        alert('שגיאה בקריאת הקובץ. וודא שזהו קובץ JSON תקין.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function showFeedbackMsg(msg) {
+            const el = $('exportImportFeedback');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 3000);
+        }
+
+        window.exportData = exportData;
+        window.importData = importData;
 
         // Initial render
         renderTable();
