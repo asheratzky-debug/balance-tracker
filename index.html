@@ -74,6 +74,7 @@
             border-top-color: rgba(255,255,255,0.08);
         }
         @media (max-width: 767px) { .bottom-nav { display: flex; } }
+        .bottom-nav { z-index: 400; }
         .nav-item {
             flex: 1; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
@@ -308,40 +309,36 @@
         </button>
     </nav>
 
-    <!-- Detail Chart Modal (full screen) -->
-    <div id="detailChartModal" class="fixed inset-0 hidden flex-col z-50" id="detailChartModal"
-         style="background:#fff;" >
-        <style>
-            #detailChartModal { background: #fff; }
-            .dark #detailChartModal { background: #0f0f1e; }
-        </style>
+    <!-- Detail Chart Modal (true full screen via inline styles) -->
+    <div id="detailChartModal"
+         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;flex-direction:column;overflow-y:auto;">
 
         <!-- Header -->
-        <div class="flex justify-between items-start px-5 pt-12 pb-2">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:52px 20px 8px;">
             <div>
-                <div class="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">גרף מפורט</div>
-                <div class="text-2xl font-bold text-gray-800 dark:text-white" id="detailCurrentBalance">—</div>
-                <div id="detailChangeLabel" class="text-sm font-semibold mt-0.5 text-gray-400"></div>
+                <div style="font-size:11px;letter-spacing:.06em;opacity:.5;margin-bottom:4px;">גרף מפורט</div>
+                <div style="font-size:26px;font-weight:700;" id="detailCurrentBalance">—</div>
+                <div id="detailChangeLabel" style="font-size:14px;font-weight:600;margin-top:2px;"></div>
             </div>
             <button onclick="closeDetailChart()"
-                class="mt-1 w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xl font-bold">✕</button>
+                style="width:36px;height:36px;border-radius:50%;border:none;font-size:18px;cursor:pointer;opacity:.6;background:rgba(128,128,128,.15);">✕</button>
         </div>
 
         <!-- Hover info -->
-        <div id="detailHoverInfo" class="px-5 h-8 flex items-center text-sm text-gray-500 dark:text-gray-400"></div>
+        <div id="detailHoverInfo" style="padding:0 20px;height:28px;display:flex;align-items:center;font-size:13px;opacity:.7;"></div>
 
-        <!-- Chart — fills remaining space -->
-        <div class="flex-1 px-2 pb-1 min-h-0">
-            <canvas id="detailChartCanvas" style="width:100%;height:100%;"></canvas>
+        <!-- Chart -->
+        <div style="flex:1;min-height:260px;padding:0 8px 4px;position:relative;">
+            <canvas id="detailChartCanvas"></canvas>
         </div>
 
         <!-- Stats -->
-        <div class="px-4 pb-4 pt-2">
-            <div class="grid grid-cols-3 gap-2" id="detailStats"></div>
+        <div style="padding:8px 16px 16px;">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="detailStats"></div>
         </div>
 
-        <!-- Period label -->
-        <div class="text-center text-xs text-gray-400 pb-6" id="detailTitle"></div>
+        <!-- Period -->
+        <div style="text-align:center;font-size:11px;opacity:.4;padding-bottom:32px;" id="detailTitle"></div>
     </div>
 
     <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
@@ -965,7 +962,7 @@
             }
         };
 
-        function buildChartConfig({ filtered, isMobile, lineColor, grad, gridColor, textColor, showDots, showXAxis }) {
+        function buildChartConfig({ filtered, isMobile, lineColor, grad, gridColor, textColor, showDots, showXAxis, yAxisRight }) {
             const labels = filtered.map(e => formatMonthShort(e.month));
             const data = filtered.map(e => e.amount);
             return {
@@ -1015,6 +1012,7 @@
                     scales: {
                         y: {
                             display: !isMobile,
+                            position: yAxisRight ? 'right' : 'left',
                             ticks: {
                                 callback: v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v,
                                 color: textColor, maxTicksLimit: 5,
@@ -1108,16 +1106,18 @@
         function openDetailChart() {
             if (!entries.length) return;
             const modal = $('detailChartModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            const bg = darkMode ? '#0f0f1e' : '#ffffff';
+            const fg = darkMode ? '#f0f0f0' : '#111111';
+            modal.style.background = bg;
+            modal.style.color = fg;
+            modal.style.display = 'flex';
             renderDetailStats();
             setTimeout(() => renderDetailChart(), 60);
         }
         window.openDetailChart = openDetailChart;
 
         function closeDetailChart() {
-            $('detailChartModal').classList.add('hidden');
-            $('detailChartModal').classList.remove('flex');
+            $('detailChartModal').style.display = 'none';
             if (detailChart) { detailChart.destroy(); detailChart = null; }
         }
         window.closeDetailChart = closeDetailChart;
@@ -1140,22 +1140,19 @@
                 chgEl.style.color = isUp ? '#22c55e' : '#ef4444';
             }
 
-            const bg = 'background:rgba(0,0,0,0.04)';
-            $('detailStats').innerHTML = `
-                <div style="${bg}" class="dark:bg-gray-800 rounded-2xl p-3 text-center">
-                    <div class="text-xs text-gray-400 mb-1">יתרה ראשונה</div>
-                    <div class="font-bold text-gray-700 dark:text-gray-300 text-sm">${formatCurrency(first.amount)}</div>
-                </div>
-                <div style="${bg}" class="dark:bg-gray-800 rounded-2xl p-3 text-center">
-                    <div class="text-xs text-gray-400 mb-1">סה"כ שינוי</div>
-                    <div class="font-bold ${isUp ? 'text-green-500' : 'text-red-500'} text-sm">${isUp ? '+' : ''}${formatCurrency(total)}</div>
-                    <div class="text-xs ${isUp ? 'text-green-400' : 'text-red-400'}">${pct}%</div>
-                </div>
-                <div style="${bg}" class="dark:bg-gray-800 rounded-2xl p-3 text-center">
-                    <div class="text-xs text-gray-400 mb-1">ממוצע חודשי</div>
-                    <div class="font-bold ${avg >= 0 ? 'text-green-500' : 'text-red-500'} text-sm">${avg >= 0 ? '+' : ''}${formatCurrency(avg)}</div>
-                </div>
-            `;
+            const cardBg = darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
+            const labelColor = darkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+            const valColor = darkMode ? '#f0f0f0' : '#111';
+            const card = (label, val, sub, color) => `
+                <div style="background:${cardBg};border-radius:16px;padding:12px;text-align:center;">
+                    <div style="font-size:11px;color:${labelColor};margin-bottom:4px;">${label}</div>
+                    <div style="font-weight:700;font-size:13px;color:${color || valColor};">${val}</div>
+                    ${sub ? `<div style="font-size:11px;color:${color || labelColor};margin-top:2px;">${sub}</div>` : ''}
+                </div>`;
+            $('detailStats').innerHTML =
+                card('יתרה ראשונה', formatCurrency(first.amount)) +
+                card('סה"כ שינוי', `${isUp?'+':''}${formatCurrency(total)}`, `${pct}%`, isUp ? '#22c55e' : '#ef4444') +
+                card('ממוצע חודשי', `${avg>=0?'+':''}${formatCurrency(avg)}`, null, avg >= 0 ? '#22c55e' : '#ef4444');
             $('detailTitle').textContent = `${formatMonth(first.month)} — ${formatMonth(last.month)}  ·  ${sorted.length} חודשים`;
         }
 
@@ -1176,10 +1173,12 @@
             grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.28)' : 'rgba(239,68,68,0.28)');
             grad.addColorStop(1, isUp ? 'rgba(34,197,94,0)' : 'rgba(239,68,68,0)');
 
+            const isMobile = window.innerWidth < 768;
             detailChart = new Chart(ctx, buildChartConfig({
-                filtered: sorted, isMobile: window.innerWidth < 768,
+                filtered: sorted, isMobile,
                 lineColor, grad, gridColor, textColor,
                 showDots: sorted.length <= 36, showXAxis: true,
+                yAxisRight: isMobile,   // on mobile: no y-axis anyway; on desktop: right side (RTL)
             }));
 
             // Touch scrub on detail chart
