@@ -1753,14 +1753,18 @@
                         return;
                     }
                     // Lenient validation: accept file if it has any known key
-                    const hasEntries = Array.isArray(data.balanceEntries);
+                    const hasEntries = Array.isArray(data.balanceEntries) && data.balanceEntries.length > 0;
                     const hasPortfolio = data.portfolioData != null;
                     if (!hasEntries && !hasPortfolio) {
                         alert('קובץ לא מוכר — חסרים נתוני יתרות או תיק נכסים.');
                         document.body.removeChild(input);
                         return;
                     }
-                    if (!confirm('פעולה זו תחליף את כל הנתונים הקיימים. להמשיך?')) {
+                    const existing = JSON.parse(localStorage.getItem('balanceEntries') || '[]');
+                    const msg = hasEntries
+                        ? `הקובץ מכיל ${data.balanceEntries.length} רשומות יתרה.\nהחלפה תמחק ${existing.length} רשומות קיימות. להמשיך?`
+                        : 'הקובץ מכיל נתוני תיק נכסים בלבד. להמשיך?';
+                    if (!confirm(msg)) {
                         document.body.removeChild(input);
                         return;
                     }
