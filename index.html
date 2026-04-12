@@ -1527,37 +1527,43 @@
         function importData() {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.json,application/json';
-            // iOS Safari requires the input to be in the DOM before .click()
-            input.style.cssText = 'position:fixed;top:-200px;left:-200px;opacity:0;pointer-events:none;';
+            // iOS is picky — '*/*' shows all files including JSON from Files app
+            input.accept = '*/*';
+            input.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
             document.body.appendChild(input);
             input.onchange = (e) => {
                 const file = e.target.files[0];
                 if (!file) { document.body.removeChild(input); return; }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
+                    let data;
                     try {
-                        const data = JSON.parse(ev.target.result);
-                        if (!data.balanceEntries || !Array.isArray(data.balanceEntries)) {
-                            alert('קובץ לא תקין - חסרים נתוני יתרות');
-                            document.body.removeChild(input);
-                            return;
-                        }
-                        if (!confirm('פעולה זו תחליף את כל הנתונים הקיימים. להמשיך?')) {
-                            document.body.removeChild(input);
-                            return;
-                        }
-                        localStorage.setItem('balanceEntries', JSON.stringify(data.balanceEntries));
-                        if (data.monthlyIncomeByYear) localStorage.setItem('monthlyIncomeByYear', JSON.stringify(data.monthlyIncomeByYear));
-                        if (data.portfolioData) localStorage.setItem('portfolioData', JSON.stringify(data.portfolioData));
-                        if (data.loveDashboardData) localStorage.setItem('loveDashboardData', JSON.stringify(data.loveDashboardData));
-                        if (data.darkMode != null) localStorage.setItem('darkMode', data.darkMode);
-                        showFeedbackMsg('✓ הנתונים יובאו בהצלחה! מרענן...');
-                        setTimeout(() => location.reload(), 1500);
+                        data = JSON.parse(ev.target.result);
                     } catch (err) {
-                        alert('שגיאה בקריאת הקובץ. וודא שזהו קובץ JSON תקין.');
+                        alert('שגיאה בקריאת הקובץ — וודא שזהו קובץ JSON תקין.');
+                        document.body.removeChild(input);
+                        return;
                     }
+                    // Lenient validation: accept file if it has any known key
+                    const hasEntries = Array.isArray(data.balanceEntries);
+                    const hasPortfolio = data.portfolioData != null;
+                    if (!hasEntries && !hasPortfolio) {
+                        alert('קובץ לא מוכר — חסרים נתוני יתרות או תיק נכסים.');
+                        document.body.removeChild(input);
+                        return;
+                    }
+                    if (!confirm('פעולה זו תחליף את כל הנתונים הקיימים. להמשיך?')) {
+                        document.body.removeChild(input);
+                        return;
+                    }
+                    if (hasEntries) localStorage.setItem('balanceEntries', JSON.stringify(data.balanceEntries));
+                    if (data.monthlyIncomeByYear) localStorage.setItem('monthlyIncomeByYear', JSON.stringify(data.monthlyIncomeByYear));
+                    if (data.portfolioData) localStorage.setItem('portfolioData', JSON.stringify(data.portfolioData));
+                    if (data.loveDashboardData) localStorage.setItem('loveDashboardData', JSON.stringify(data.loveDashboardData));
+                    if (data.darkMode != null) localStorage.setItem('darkMode', data.darkMode);
                     document.body.removeChild(input);
+                    showFeedbackMsg('✓ הנתונים יובאו בהצלחה! מרענן...');
+                    setTimeout(() => location.reload(), 1500);
                 };
                 reader.readAsText(file);
             };
