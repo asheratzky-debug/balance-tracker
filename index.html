@@ -38,11 +38,93 @@
         .ai-insight { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .note-badge { font-size: 10px; }
+
+        /* ====== MOBILE LAYOUT ====== */
+        @media (max-width: 767px) {
+            .desktop-only { display: none !important; }
+            body { padding-bottom: 76px !important; padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
+            .max-w-4xl { padding: 0 !important; }
+            .main-content { padding: 12px 12px 0; }
+        }
+        @media (min-width: 768px) {
+            .mobile-only { display: none !important; }
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: 68px; display: none;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.08);
+            z-index: 100; align-items: stretch;
+        }
+        .dark .bottom-nav {
+            background: rgba(20,20,40,0.97);
+            border-top-color: rgba(255,255,255,0.08);
+        }
+        @media (max-width: 767px) { .bottom-nav { display: flex; } }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 3px; font-size: 11px; color: #9ca3af;
+            cursor: pointer; transition: color 0.15s;
+            border: none; background: none; padding: 8px 0;
+            font-family: 'Heebo', sans-serif;
+        }
+        .nav-item.active { color: #667eea; }
+        .dark .nav-item { color: #6b7280; }
+        .dark .nav-item.active { color: #a78bfa; }
+        .nav-icon { font-size: 24px; line-height: 1; }
+
+        /* Mobile balance header */
+        .balance-big {
+            font-size: clamp(2rem, 8vw, 2.8rem);
+            font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+        }
+
+        /* Range selector */
+        .range-btn {
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 13px; font-weight: 500; color: #9ca3af;
+            background: transparent; border: none; cursor: pointer;
+            transition: all 0.15s; font-family: 'Heebo', sans-serif;
+        }
+        .range-btn.active { background: #667eea; color: white; }
+        .dark .range-btn { color: #6b7280; }
+        .dark .range-btn.active { background: #a78bfa; color: white; }
+
+        /* Chart height responsive */
+        .chart-wrap { height: 300px; }
+        @media (max-width: 767px) { .chart-wrap { height: 200px; } }
+
+        /* Entry cards (mobile) */
+        .entry-card {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.055);
+        }
+        .dark .entry-card { border-bottom-color: rgba(255,255,255,0.06); }
+        .entry-card:last-child { border-bottom: none; }
+
+        /* Mobile card header */
+        .mobile-header {
+            padding: 14px 16px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .mobile-card { border-radius: 20px; overflow: hidden; }
+        @media (max-width: 767px) {
+            .card { border-radius: 20px; }
+            .rounded-2xl { border-radius: 20px; }
+        }
     </style>
 </head>
-<body class="min-h-screen gradient-bg p-4 md:p-8">
+<body class="min-h-screen gradient-bg md:p-8">
     <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
+
+        <!-- Desktop Header -->
+        <div class="desktop-only flex justify-between items-center mb-8">
             <div class="flex gap-2">
                 <a href="portfolio.html" class="bg-white/20 hover:bg-white/30 text-white px-4 py-3 rounded-xl transition-all flex items-center gap-2 font-medium">
                     💼 תיק נכסים
@@ -60,14 +142,41 @@
             </button>
         </div>
 
-        <div class="card rounded-2xl shadow-xl p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">גרף יתרות</h2>
-            <div class="relative" style="height: 300px;">
-                <canvas id="balanceChart"></canvas>
+        <!-- Mobile Header -->
+        <div class="mobile-only flex justify-between items-center px-4 pt-14 pb-3">
+            <div>
+                <div class="text-white/70 text-sm font-medium">יתרה נוכחית</div>
+                <div id="mobileBalanceValue" class="balance-big text-white">-</div>
+                <div id="mobileBalanceChange" class="text-base font-semibold mt-1 text-white/70">-</div>
             </div>
-            <div id="noDataChart" class="text-center text-gray-400 py-12">
-                <div class="text-5xl mb-2">📈</div>
-                <p>הוסף נתונים כדי לראות את הגרף</p>
+            <button onclick="toggleDarkMode()" class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-2xl transition-all">
+                <span id="darkModeIcon2">🌙</span>
+            </button>
+        </div>
+
+        <div class="main-content">
+
+        <div class="card rounded-2xl shadow-xl mb-4 md:mb-6 overflow-hidden">
+            <!-- Desktop title -->
+            <div class="desktop-only flex justify-between items-center px-6 pt-6 pb-2">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white">גרף יתרות</h2>
+                <div id="desktopChartBalance" class="text-left"></div>
+            </div>
+            <!-- Mobile chart hover info -->
+            <div id="chartHoverInfo" class="mobile-only px-4 pt-3 pb-1" style="min-height:56px"></div>
+            <!-- Range selector -->
+            <div class="flex gap-1 px-4 md:px-6 pb-2 pt-1">
+                <button class="range-btn active" data-range="3M" onclick="setRange('3M')">3M</button>
+                <button class="range-btn" data-range="6M" onclick="setRange('6M')">6M</button>
+                <button class="range-btn" data-range="1Y" onclick="setRange('1Y')">1Y</button>
+                <button class="range-btn" data-range="all" onclick="setRange('all')">הכל</button>
+            </div>
+            <div class="chart-wrap px-2 pb-3 md:px-4 md:pb-4 relative">
+                <canvas id="balanceChart"></canvas>
+                <div id="noDataChart" class="hidden absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                    <div class="text-5xl mb-2">📈</div>
+                    <p>הוסף נתונים כדי לראות את הגרף</p>
+                </div>
             </div>
         </div>
 
@@ -86,56 +195,63 @@
             <div id="insightsContent" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
         </div>
 
-        <div class="card rounded-2xl shadow-xl p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">הוספת יתרה</h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card rounded-2xl shadow-xl p-4 md:p-6 mb-4 md:mb-6">
+            <h2 class="text-base md:text-xl font-semibold text-gray-800 dark:text-white mb-3 md:mb-4">הוספת יתרה</h2>
+            <!-- Mobile layout: 2-col grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2">חודש</label>
-                    <input type="month" id="monthInput" class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg">
+                    <label class="block text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">חודש</label>
+                    <input type="month" id="monthInput" class="w-full px-3 py-3 md:px-4 md:py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-base md:text-lg dark:bg-gray-800 dark:text-white">
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2">סכום (₪)</label>
-                    <input type="number" id="amountInput" placeholder="הזן סכום" step="0.01" class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg">
+                    <label class="block text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">סכום (₪)</label>
+                    <input type="number" id="amountInput" placeholder="0" step="0.01" inputmode="decimal" class="w-full px-3 py-3 md:px-4 md:py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-base md:text-lg dark:bg-gray-800 dark:text-white">
                 </div>
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2">הערה (אופציונלי)</label>
-                    <input type="text" id="noteInput" placeholder="בונוס, משכורת..." class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg">
+                    <label class="block text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">הערה</label>
+                    <input type="text" id="noteInput" placeholder="בונוס, משכורת..." class="w-full px-3 py-3 md:px-4 md:py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-base md:text-lg dark:bg-gray-800 dark:text-white">
                 </div>
-                <div class="flex items-end">
-                    <button id="addBtn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl">
-                        הוסף
+                <div class="col-span-2 md:col-span-1 flex items-end">
+                    <button id="addBtn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 md:py-4 px-6 rounded-xl font-semibold text-base md:text-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg active:scale-95">
+                        הוסף יתרה
                     </button>
                 </div>
             </div>
-            <p id="feedback" class="text-green-600 text-center mt-3 hidden">נוסף בהצלחה!</p>
+            <p id="feedback" class="text-green-600 text-center mt-3 hidden font-medium">✓ נוסף בהצלחה!</p>
         </div>
 
-        <div class="card rounded-2xl shadow-xl p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">טבלת יתרות</h2>
-                <button id="clearAllBtn" class="hidden text-red-500 hover:text-red-700 text-sm">מחק הכל</button>
+        <div class="card rounded-2xl shadow-xl">
+            <div class="flex justify-between items-center p-4 md:p-6 pb-3 md:pb-4">
+                <h2 class="text-base md:text-xl font-semibold text-gray-800 dark:text-white">היסטוריית יתרות</h2>
+                <button id="clearAllBtn" class="hidden text-red-400 hover:text-red-600 text-sm font-medium">מחק הכל</button>
             </div>
+            <!-- Empty state -->
             <div id="noDataTable" class="text-center text-gray-400 py-8">
                 <div class="text-5xl mb-2">📋</div>
                 <p>עדיין אין נתונים</p>
             </div>
-            <div id="tableContainer" class="hidden overflow-x-auto">
+
+            <!-- Mobile: cards view -->
+            <div id="mobileCards" class="mobile-only"></div>
+
+            <!-- Desktop: table view -->
+            <div id="tableContainer" class="desktop-only hidden overflow-x-auto px-6 pb-6">
                 <table class="w-full">
                     <thead>
-                        <tr class="border-b-2 border-gray-200">
-                            <th class="text-right py-3 px-2">
+                        <tr class="border-b-2 border-gray-200 dark:border-gray-700">
+                            <th class="text-right py-3 px-2 dark:text-gray-300">
                                 <button onclick="toggleSort('month')" class="flex items-center gap-1 hover:text-purple-600">
                                     חודש <span id="sort-month" class="text-xs">▼</span>
                                 </button>
                             </th>
-                            <th class="text-right py-3 px-2">
+                            <th class="text-right py-3 px-2 dark:text-gray-300">
                                 <button onclick="toggleSort('amount')" class="flex items-center gap-1 hover:text-purple-600">
                                     סכום <span id="sort-amount" class="text-xs text-gray-300">▼</span>
                                 </button>
                             </th>
-                            <th class="text-right py-3 px-2">שינוי</th>
-                            <th class="text-right py-3 px-2">הערה</th>
-                            <th class="text-center py-3 px-2">פעולות</th>
+                            <th class="text-right py-3 px-2 dark:text-gray-300">שינוי</th>
+                            <th class="text-right py-3 px-2 dark:text-gray-300">הערה</th>
+                            <th class="text-center py-3 px-2 dark:text-gray-300">פעולות</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -143,7 +259,7 @@
             </div>
         </div>
 
-        <div class="text-center mt-6">
+        <div class="desktop-only text-center mt-6">
             <div class="flex justify-center gap-3 mb-3">
                 <button onclick="exportData()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-sm font-medium">
                     📥 Export Data
@@ -152,10 +268,36 @@
                     📤 Import Data
                 </button>
             </div>
-            <p id="exportImportFeedback" class="text-white font-medium mb-2 hidden"></p>
             <p class="text-white/60 text-sm">הנתונים נשמרים אוטומטית בדפדפן</p>
         </div>
-    </div>
+        <p id="exportImportFeedback" class="text-center text-white font-medium mt-3 hidden"></p>
+
+        </div><!-- /main-content -->
+    </div><!-- /max-w-4xl -->
+
+    <!-- Bottom Navigation (mobile only) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="navHome">
+            <span class="nav-icon">📊</span>
+            <span>יתרות</span>
+        </button>
+        <button class="nav-item" onclick="window.location='portfolio.html'">
+            <span class="nav-icon">💼</span>
+            <span>תיק נכסים</span>
+        </button>
+        <button class="nav-item" onclick="openAnnualReports()">
+            <span class="nav-icon">📈</span>
+            <span>דוחות</span>
+        </button>
+        <button class="nav-item" onclick="exportData()">
+            <span class="nav-icon">📥</span>
+            <span>Export</span>
+        </button>
+        <button class="nav-item" onclick="importData()">
+            <span class="nav-icon">📤</span>
+            <span>Import</span>
+        </button>
+    </nav>
 
     <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 m-4 max-w-sm w-full">
@@ -214,6 +356,7 @@
         let chart = null;
         let sortConfig = { column: 'month', asc: true };
         let darkMode = localStorage.getItem('darkMode') === 'true';
+        let currentRange = '3M';
 
         const $ = id => document.getElementById(id);
 
@@ -232,7 +375,10 @@
         }
 
         function updateDarkModeIcon() {
-            $('darkModeIcon').textContent = darkMode ? '☀️' : '🌙';
+            const icon = darkMode ? '☀️' : '🌙';
+            $('darkModeIcon').textContent = icon;
+            const icon2 = $('darkModeIcon2');
+            if (icon2) icon2.textContent = icon;
         }
 
         window.toggleDarkMode = toggleDarkMode;
@@ -378,9 +524,11 @@
             entries.sort((a, b) => a.month.localeCompare(b.month));
             localStorage.setItem('balanceEntries', JSON.stringify(entries));
             renderTable();
+            renderMobileCards();
             renderChart();
             renderInsights();
             renderAIInsights();
+            updateBalanceHeader();
         }
 
         function renderAIInsights() {
@@ -563,11 +711,53 @@
             `;
         }
 
+        function renderMobileCards() {
+            const el = $('mobileCards');
+            if (!el) return;
+
+            if (!entries.length) { el.innerHTML = ''; return; }
+
+            const sorted = [...entries].sort((a, b) => b.month.localeCompare(a.month));
+            const chrono = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+            const changeMap = {};
+            chrono.forEach((e, i) => {
+                if (chrono[i - 1]) {
+                    const d = e.amount - chrono[i - 1].amount;
+                    const p = chrono[i-1].amount > 0 ? ((d / chrono[i-1].amount) * 100).toFixed(1) : 0;
+                    changeMap[e.id] = { d, p };
+                }
+            });
+
+            el.innerHTML = sorted.map(e => {
+                const chg = changeMap[e.id];
+                const chgHTML = chg
+                    ? `<span class="text-sm font-medium ${chg.d >= 0 ? 'text-green-500' : 'text-red-500'}">${chg.d >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(chg.d))} (${chg.p}%)</span>`
+                    : `<span class="text-sm text-gray-300">-</span>`;
+                return `
+                    <div class="entry-card">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-gray-800 dark:text-white">${formatMonth(e.month)}</div>
+                            ${e.note ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${e.note}</div>` : ''}
+                            <div class="mt-1">${chgHTML}</div>
+                        </div>
+                        <div class="flex items-center gap-2 mr-3">
+                            <div class="text-left">
+                                <div class="font-bold text-gray-800 dark:text-white">${formatCurrency(e.amount)}</div>
+                            </div>
+                            <button onclick="openEdit(${e.id})" class="text-blue-400 p-2 text-xl leading-none active:scale-90">✏️</button>
+                            <button onclick="openDelete(${e.id})" class="text-red-400 p-2 text-xl leading-none active:scale-90">🗑️</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
         function renderTable() {
-            if (!entries.length) {
+            const isEmpty = !entries.length;
+            $('noDataTable').classList.toggle('hidden', !isEmpty);
+            $('clearAllBtn').classList.toggle('hidden', isEmpty);
+
+            if (isEmpty) {
                 $('tableContainer').classList.add('hidden');
-                $('noDataTable').classList.remove('hidden');
-                $('clearAllBtn').classList.add('hidden');
                 return;
             }
 
@@ -623,71 +813,192 @@
             });
         }
 
+        function filteredEntries() {
+            const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+            if (!currentRange || currentRange === 'all') return sorted;
+            const n = { '3M': 3, '6M': 6, '1Y': 12 }[currentRange] || sorted.length;
+            return sorted.slice(-Math.max(n, 2));
+        }
+
+        function setRange(range) {
+            currentRange = range;
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.range === range);
+            });
+            if (chart) { chart.destroy(); chart = null; }
+            renderChart();
+        }
+        window.setRange = setRange;
+
+        function formatMonthShort(s) {
+            const [y, m] = s.split('-');
+            const names = ['ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג','ספט','אוק','נוב','דצ'];
+            return `${names[parseInt(m)-1]} '${y.slice(2)}`;
+        }
+
+        function updateBalanceHeader() {
+            const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+            if (!sorted.length) return;
+            const latest = sorted[sorted.length - 1];
+            const prev = sorted.length > 1 ? sorted[sorted.length - 2] : null;
+            const change = prev ? latest.amount - prev.amount : 0;
+            const changePct = prev && prev.amount > 0 ? ((change / prev.amount) * 100).toFixed(1) : 0;
+            const isUp = change >= 0;
+            const changeStr = `${isUp ? '▲' : '▼'} ${formatCurrency(Math.abs(change))} (${changePct}%)`;
+
+            const mobileVal = $('mobileBalanceValue');
+            const mobileChg = $('mobileBalanceChange');
+            if (mobileVal) mobileVal.textContent = formatCurrency(latest.amount);
+            if (mobileChg) {
+                mobileChg.textContent = changeStr;
+                mobileChg.style.color = isUp ? 'rgba(134,239,172,1)' : 'rgba(252,165,165,1)';
+            }
+
+            const desk = $('desktopChartBalance');
+            if (desk) {
+                desk.innerHTML = `<span class="text-xl font-bold text-gray-800 dark:text-white">${formatCurrency(latest.amount)}</span>
+                    <span class="text-sm mr-2 font-semibold ${isUp ? 'text-green-500' : 'text-red-500'}">&nbsp;${changeStr}</span>`;
+            }
+
+            updateChartHoverInfo(null);
+        }
+
+        function updateChartHoverInfo(entry) {
+            const el = $('chartHoverInfo');
+            if (!el) return;
+            const filtered = filteredEntries();
+            if (!filtered.length) { el.innerHTML = ''; return; }
+            const e = entry || filtered[filtered.length - 1];
+            const first = filtered[0];
+            const change = e.amount - first.amount;
+            const changePct = first.amount > 0 ? ((change / first.amount) * 100).toFixed(1) : 0;
+            const isUp = change >= 0;
+            el.innerHTML = `
+                <div class="flex items-baseline gap-3">
+                    <span class="text-xl font-bold text-gray-800 dark:text-white">${formatCurrency(e.amount)}</span>
+                    <span class="text-sm font-semibold ${isUp ? 'text-green-500' : 'text-red-500'}">${isUp ? '▲' : '▼'} ${formatCurrency(Math.abs(change))} (${changePct}%)</span>
+                    <span class="text-xs text-gray-400 mr-auto">${formatMonth(e.month)}</span>
+                </div>
+            `;
+        }
+
         function renderChart() {
             const canvas = $('balanceChart');
-            if (!entries.length) {
+            const filtered = filteredEntries();
+
+            if (!filtered.length) {
                 canvas.style.display = 'none';
                 $('noDataChart').classList.remove('hidden');
                 if (chart) { chart.destroy(); chart = null; }
+                updateBalanceHeader();
                 return;
             }
 
             canvas.style.display = 'block';
             $('noDataChart').classList.add('hidden');
 
-            const labels = entries.map(e => formatMonth(e.month));
-            const data = entries.map(e => e.amount);
+            const isMobile = window.innerWidth < 768;
+            const labels = filtered.map(e => formatMonthShort(e.month));
+            const data = filtered.map(e => e.amount);
+            const isUp = data.length < 2 || data[data.length - 1] >= data[0];
+            const lineColor = isUp ? '#22c55e' : '#ef4444';
+            const gridColor = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+            const textColor = darkMode ? '#777' : '#aaa';
 
-            const chartColor = darkMode ? '#a78bfa' : '#667eea';
-            const gridColor = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-            const textColor = darkMode ? '#ccc' : '#666';
+            if (chart) { chart.destroy(); chart = null; }
 
-            if (chart) {
-                chart.data.labels = labels;
-                chart.data.datasets[0].data = data;
-                chart.update();
-            } else {
-                const ctx = canvas.getContext('2d');
-                const grad = ctx.createLinearGradient(0, 0, 0, 300);
-                grad.addColorStop(0, darkMode ? 'rgba(167,139,250,0.4)' : 'rgba(102,126,234,0.4)');
-                grad.addColorStop(1, darkMode ? 'rgba(167,139,250,0)' : 'rgba(102,126,234,0)');
+            const ctx = canvas.getContext('2d');
+            const chartH = isMobile ? 200 : 300;
+            const grad = ctx.createLinearGradient(0, 0, 0, chartH);
+            grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)');
+            grad.addColorStop(1, isUp ? 'rgba(34,197,94,0)' : 'rgba(239,68,68,0)');
 
-                chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels,
-                        datasets: [{
-                            data,
-                            borderColor: chartColor,
-                            backgroundColor: grad,
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 6,
-                            pointBackgroundColor: chartColor
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: {
-                                ticks: {
-                                    callback: v => formatCurrency(v),
-                                    color: textColor
-                                },
-                                grid: { color: gridColor }
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        borderColor: lineColor,
+                        backgroundColor: grad,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: lineColor,
+                        pointHoverBorderColor: darkMode ? '#1a1a2e' : '#fff',
+                        pointHoverBorderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    animation: { duration: 400 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: !isMobile,
+                            callbacks: {
+                                label: ctx => formatCurrency(ctx.parsed.y),
+                                title: items => items[0].label,
                             },
-                            x: {
-                                ticks: { color: textColor },
-                                grid: { color: gridColor }
-                            }
+                            backgroundColor: darkMode ? '#1e1e3a' : '#fff',
+                            titleColor: darkMode ? '#e0e0e0' : '#333',
+                            bodyColor: lineColor,
+                            borderColor: darkMode ? '#3a3a5a' : '#e5e7eb',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            titleFont: { family: 'Heebo', size: 12 },
+                            bodyFont: { family: 'Heebo', size: 16, weight: 'bold' },
                         }
-                    }
-                });
+                    },
+                    scales: {
+                        y: {
+                            display: !isMobile,
+                            ticks: {
+                                callback: v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v,
+                                color: textColor,
+                                maxTicksLimit: 5,
+                                font: { family: 'Heebo', size: 11 },
+                            },
+                            grid: { color: gridColor },
+                        },
+                        x: {
+                            display: !isMobile,
+                            ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0, font: { family: 'Heebo', size: 11 } },
+                            grid: { display: false },
+                        }
+                    },
+                }
+            });
+
+            // Mobile touch support
+            if (isMobile) {
+                canvas.removeEventListener('touchstart', _chartTouchHandler);
+                canvas.removeEventListener('touchmove', _chartTouchHandler);
+                canvas.removeEventListener('touchend', _chartTouchEnd);
+                _chartTouchHandler = (e) => {
+                    const touch = e.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    const x = touch.clientX - rect.left;
+                    const ratio = Math.max(0, Math.min(1, x / rect.width));
+                    const idx = Math.round(ratio * (filtered.length - 1));
+                    updateChartHoverInfo(filtered[idx]);
+                };
+                _chartTouchEnd = () => updateChartHoverInfo(null);
+                canvas.addEventListener('touchstart', _chartTouchHandler, { passive: true });
+                canvas.addEventListener('touchmove', _chartTouchHandler, { passive: true });
+                canvas.addEventListener('touchend', _chartTouchEnd, { passive: true });
             }
+
+            updateBalanceHeader();
+            updateChartHoverInfo(null);
         }
+
+        let _chartTouchHandler = null, _chartTouchEnd = null;
 
         // Yearly Stats Functions
         function openYearlyStats() {
@@ -1216,29 +1527,37 @@
         function importData() {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.json';
+            input.accept = '.json,application/json';
+            // iOS Safari requires the input to be in the DOM before .click()
+            input.style.cssText = 'position:fixed;top:-200px;left:-200px;opacity:0;pointer-events:none;';
+            document.body.appendChild(input);
             input.onchange = (e) => {
                 const file = e.target.files[0];
-                if (!file) return;
+                if (!file) { document.body.removeChild(input); return; }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     try {
                         const data = JSON.parse(ev.target.result);
                         if (!data.balanceEntries || !Array.isArray(data.balanceEntries)) {
                             alert('קובץ לא תקין - חסרים נתוני יתרות');
+                            document.body.removeChild(input);
                             return;
                         }
-                        if (!confirm('פעולה זו תחליף את כל הנתונים הקיימים. להמשיך?')) return;
+                        if (!confirm('פעולה זו תחליף את כל הנתונים הקיימים. להמשיך?')) {
+                            document.body.removeChild(input);
+                            return;
+                        }
                         localStorage.setItem('balanceEntries', JSON.stringify(data.balanceEntries));
                         if (data.monthlyIncomeByYear) localStorage.setItem('monthlyIncomeByYear', JSON.stringify(data.monthlyIncomeByYear));
                         if (data.portfolioData) localStorage.setItem('portfolioData', JSON.stringify(data.portfolioData));
                         if (data.loveDashboardData) localStorage.setItem('loveDashboardData', JSON.stringify(data.loveDashboardData));
                         if (data.darkMode != null) localStorage.setItem('darkMode', data.darkMode);
-                        showFeedbackMsg('הנתונים יובאו בהצלחה! מרענן...');
+                        showFeedbackMsg('✓ הנתונים יובאו בהצלחה! מרענן...');
                         setTimeout(() => location.reload(), 1500);
                     } catch (err) {
                         alert('שגיאה בקריאת הקובץ. וודא שזהו קובץ JSON תקין.');
                     }
+                    document.body.removeChild(input);
                 };
                 reader.readAsText(file);
             };
@@ -1257,10 +1576,12 @@
 
         // Initial render
         renderTable();
+        renderMobileCards();
         renderChart();
         renderInsights();
         renderAIInsights();
         updateSortIndicators();
+        updateBalanceHeader();
     </script>
     <script>
     if ('serviceWorker' in navigator) {
