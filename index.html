@@ -395,13 +395,57 @@
     </div>
 
     <script>
-        let entries = JSON.parse(localStorage.getItem('balanceEntries') || '[]');
-        let monthlyIncome = JSON.parse(localStorage.getItem('monthlyIncomeByYear') || '{}');
-        let editingId = null;
-        let deletingId = null;
-        let chart = null;
-        let sortConfig = { column: 'month', asc: true };
-        let darkMode = localStorage.getItem('darkMode') === 'true';
+        // ── Safe localStorage helpers ──────────────────────────────────────────
+        function lsGet(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw === null) return fallback;
+                const parsed = JSON.parse(raw);
+                return parsed !== null && parsed !== undefined ? parsed : fallback;
+            } catch (e) {
+                console.warn('[balance-tracker] localStorage parse error:', key, e);
+                return fallback;
+            }
+        }
+        function lsSet(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); }
+            catch (e) { console.warn('[balance-tracker] localStorage write error:', key, e); }
+        }
+
+        // ── HTML escape — prevents XSS from user-entered data ─────────────────
+        function esc(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ── Safe number helper — returns 0 instead of NaN/Infinity ────────────
+        function safeNum(n, fallback = 0) {
+            const v = Number(n);
+            return isFinite(v) ? v : fallback;
+        }
+        function safePct(numerator, denominator, decimals = 1) {
+            if (!denominator || !isFinite(denominator)) return '0';
+            return ((numerator / denominator) * 100).toFixed(decimals);
+        }
+
+        // ── App state ──────────────────────────────────────────────────────────
+        let entries     = lsGet('balanceEntries', []);
+        let monthlyIncome = lsGet('monthlyIncomeByYear', {});
+
+        // Validate entries shape — discard malformed records
+        if (!Array.isArray(entries)) entries = [];
+        entries = entries.filter(e => e && typeof e.month === 'string' && isFinite(e.amount));
+
+        let editingId   = null;
+        let deletingId  = null;
+        let chart       = null;
+        let sortConfig  = { column: 'month', asc: true };
+        let darkMode    = localStorage.getItem('darkMode') === 'true';
         let currentRange = '3M';
 
         const $ = id => document.getElementById(id);
@@ -442,12 +486,16 @@
         $('noteInput').onkeydown = (e) => { if (e.key === 'Enter') addEntry(); };
 
         function addEntry() {
-            const month = $('monthInput').value;
-            const amount = parseFloat($('amountInput').value);
-            const note = $('noteInput').value.trim();
+            const monthEl = $('monthInput'), amountEl = $('amountInput'), noteEl = $('noteInput');
+            if (!monthEl || !amountEl || !noteEl) return;
+
+            const month  = monthEl.value;
+            const amount = parseFloat(amountEl.value);
+            const note   = noteEl.value.trim().slice(0, 300); // cap at 300 chars
 
             if (!month) return alert('בחר חודש');
-            if (isNaN(amount)) return alert('הזן סכום');
+            if (isNaN(amount) || !isFinite(amount)) return alert('הזן סכום תקין');
+            if (amount < 0) return alert('הסכום חייב להיות חיובי');
 
             const idx = entries.findIndex(e => e.month === month);
             if (idx !== -1) {
@@ -493,8 +541,8 @@
         // Edit handlers
         $('saveEditBtn').onclick = () => {
             const amount = parseFloat($('editAmountInput').value);
-            const note = $('editNoteInput').value.trim();
-            if (!isNaN(amount)) {
+            const note = $('editNoteInput').value.trim().slice(0, 300);
+            if (!isNaN(amount) && amount >= 0) {
                 const e = entries.find(x => x.id === editingId);
                 if (e) {
                     e.amount = amount;
@@ -542,6 +590,7 @@
         function updateSortIndicators() {
             ['month', 'amount'].forEach(col => {
                 const el = $(`sort-${col}`);
+                if (!el) return;
                 if (col === sortConfig.column) {
                     el.textContent = sortConfig.asc ? '▲' : '▼';
                     el.classList.remove('text-gray-300');
@@ -568,7 +617,7 @@
 
         function saveAndRender() {
             entries.sort((a, b) => a.month.localeCompare(b.month));
-            localStorage.setItem('balanceEntries', JSON.stringify(entries));
+            lsSet('balanceEntries', entries);
             renderTable();
             renderMobileCards();
             renderChart();
@@ -607,7 +656,7 @@
             const latest = amounts[amounts.length - 1];
             const prev = amounts[amounts.length - 2];
             const lastChange = latest - prev;
-            const lastChangePct = ((lastChange / prev) * 100).toFixed(1);
+            const lastChangePct = safePct(lastChange, prev);
             const avg = changes.reduce((a,b) => a+b, 0) / changes.length;
 
             // Trend analysis - count actual consecutive months
@@ -713,7 +762,7 @@
             const amounts = entries.map(e => e.amount);
             const latest = amounts[amounts.length - 1], first = amounts[0];
             const totalChange = latest - first;
-            const pct = ((totalChange / first) * 100).toFixed(1);
+            const pct = safePct(totalChange, first);
 
             let sum = 0;
             for (let i = 1; i < amounts.length; i++) sum += amounts[i] - amounts[i-1];
@@ -783,7 +832,7 @@
                     <div class="entry-card">
                         <div class="flex-1 min-w-0">
                             <div class="font-semibold text-gray-800 dark:text-white">${formatMonth(e.month)}</div>
-                            ${e.note ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${e.note}</div>` : ''}
+                            ${e.note ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${esc(e.note)}</div>` : ''}
                             <div class="mt-1">${chgHTML}</div>
                         </div>
                         <div class="flex items-center gap-2 mr-3">
@@ -849,7 +898,7 @@
                     <td class="py-3 px-2">${formatMonth(e.month)}</td>
                     <td class="py-3 px-2 font-semibold">${formatCurrency(e.amount)}</td>
                     <td class="py-3 px-2">${change}</td>
-                    <td class="py-3 px-2 text-gray-500 text-sm max-w-32 truncate" title="${e.note || ''}">${e.note || '-'}</td>
+                    <td class="py-3 px-2 text-gray-500 text-sm max-w-32 truncate" title="${esc(e.note)}">${esc(e.note) || '-'}</td>
                     <td class="py-3 px-2 text-center">
                         <button onclick="openEdit(${e.id})" class="text-blue-600 hover:text-blue-800 mx-1 p-1">✏️</button>
                         <button onclick="openDelete(${e.id})" class="text-red-600 hover:text-red-800 mx-1 p-1">🗑️</button>
@@ -1351,7 +1400,7 @@
                                     <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded text-sm">
                                         <span class="flex items-center gap-2">
                                             <span class="px-2 py-0.5 rounded text-xs ${getTypeColor(item.type)}">${item.type}</span>
-                                            ${item.description}
+                                            ${esc(item.description)}
                                         </span>
                                         <span class="flex items-center gap-2">
                                             <span class="font-semibold">${formatCurrency(item.amount)}</span>
@@ -1453,14 +1502,14 @@
                 type: type
             });
 
-            localStorage.setItem('monthlyIncomeByYear', JSON.stringify(monthlyIncome));
+            lsSet('monthlyIncomeByYear', monthlyIncome);
             renderYearlyStats();
         }
 
         function deleteMonthlyIncomeItem(year, id) {
             if (monthlyIncome[year]) {
                 monthlyIncome[year] = monthlyIncome[year].filter(item => item.id !== id);
-                localStorage.setItem('monthlyIncomeByYear', JSON.stringify(monthlyIncome));
+                lsSet('monthlyIncomeByYear', monthlyIncome);
                 renderYearlyStats();
             }
         }
@@ -1649,7 +1698,7 @@
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     ${yearMonthlyIncome.map(item => `
-                                        <span class="px-3 py-1 rounded-full text-sm ${getTypeColor(item.type)}">${item.description}: ${formatCurrency(item.amount)}</span>
+                                        <span class="px-3 py-1 rounded-full text-sm ${getTypeColor(item.type)}">${esc(item.description)}: ${formatCurrency(item.amount)}</span>
                                     `).join('')}
                                 </div>
                             </div>
@@ -1718,21 +1767,25 @@
 
         // Export / Import
         function exportData() {
-            const data = {
-                balanceEntries: JSON.parse(localStorage.getItem('balanceEntries') || '[]'),
-                monthlyIncomeByYear: JSON.parse(localStorage.getItem('monthlyIncomeByYear') || '{}'),
-                portfolioData: JSON.parse(localStorage.getItem('portfolioData') || 'null'),
-                loveDashboardData: JSON.parse(localStorage.getItem('loveDashboardData') || 'null'),
-                darkMode: localStorage.getItem('darkMode'),
-                exportDate: new Date().toISOString()
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'balance-tracker-backup.json';
-            a.click();
-            URL.revokeObjectURL(a.href);
-            showFeedbackMsg('הנתונים יוצאו בהצלחה!');
+            try {
+                const data = {
+                    balanceEntries: lsGet('balanceEntries', []),
+                    monthlyIncomeByYear: lsGet('monthlyIncomeByYear', {}),
+                    portfolioData: lsGet('portfolioData', null),
+                    loveDashboardData: lsGet('loveDashboardData', null),
+                    darkMode: localStorage.getItem('darkMode'),
+                    exportDate: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'balance-tracker-backup.json';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showFeedbackMsg('הנתונים יוצאו בהצלחה!');
+            } catch (err) {
+                alert('שגיאה בייצוא: ' + err.message);
+            }
         }
 
         function importData() {
