@@ -39,15 +39,13 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .note-badge { font-size: 10px; }
 
-        /* Detail modal slide-up */
-        #detailChartModal { align-items: flex-end; }
-        #detailChartInner {
-            animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
-            max-height: 90vh;
+        /* Detail modal full screen */
+        #detailChartModal {
+            animation: fadeSlideIn 0.28s cubic-bezier(0.32,0.72,0,1);
         }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ====== MOBILE LAYOUT ====== */
@@ -310,29 +308,40 @@
         </button>
     </nav>
 
-    <!-- Detail Chart Modal -->
-    <div id="detailChartModal" class="fixed inset-0 bg-black/80 hidden items-end justify-center z-50" onclick="if(event.target===this)closeDetailChart()">
-        <div class="w-full max-w-2xl rounded-t-3xl shadow-2xl overflow-hidden" style="background: var(--detail-bg, #fff);"
-             id="detailChartInner">
-            <style>
-                #detailChartInner { background: #fff; }
-                .dark #detailChartInner { background: #1a1a2e; }
-            </style>
-            <div class="flex justify-between items-center px-5 pt-5 pb-3">
-                <div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 font-medium">כל התקופה</div>
-                    <div class="text-xl font-bold text-gray-800 dark:text-white" id="detailTitle">גרף מפורט</div>
-                </div>
-                <button onclick="closeDetailChart()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-3xl leading-none w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">&times;</button>
+    <!-- Detail Chart Modal (full screen) -->
+    <div id="detailChartModal" class="fixed inset-0 hidden flex-col z-50" id="detailChartModal"
+         style="background:#fff;" >
+        <style>
+            #detailChartModal { background: #fff; }
+            .dark #detailChartModal { background: #0f0f1e; }
+        </style>
+
+        <!-- Header -->
+        <div class="flex justify-between items-start px-5 pt-12 pb-2">
+            <div>
+                <div class="text-xs text-gray-400 font-medium uppercase tracking-wide mb-1">גרף מפורט</div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-white" id="detailCurrentBalance">—</div>
+                <div id="detailChangeLabel" class="text-sm font-semibold mt-0.5 text-gray-400"></div>
             </div>
-            <div id="detailHoverInfo" class="px-5 h-7 text-sm flex items-center gap-2 text-gray-600 dark:text-gray-300"></div>
-            <div style="height: 340px; padding: 0 12px 8px;">
-                <canvas id="detailChartCanvas"></canvas>
-            </div>
-            <div class="px-5 pb-6 pt-2">
-                <div class="grid grid-cols-3 gap-3" id="detailStats"></div>
-            </div>
+            <button onclick="closeDetailChart()"
+                class="mt-1 w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xl font-bold">✕</button>
         </div>
+
+        <!-- Hover info -->
+        <div id="detailHoverInfo" class="px-5 h-8 flex items-center text-sm text-gray-500 dark:text-gray-400"></div>
+
+        <!-- Chart — fills remaining space -->
+        <div class="flex-1 px-2 pb-1 min-h-0">
+            <canvas id="detailChartCanvas" style="width:100%;height:100%;"></canvas>
+        </div>
+
+        <!-- Stats -->
+        <div class="px-4 pb-4 pt-2">
+            <div class="grid grid-cols-3 gap-2" id="detailStats"></div>
+        </div>
+
+        <!-- Period label -->
+        <div class="text-center text-xs text-gray-400 pb-6" id="detailTitle"></div>
     </div>
 
     <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
@@ -1115,28 +1124,39 @@
 
         function renderDetailStats() {
             const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
-            if (sorted.length < 2) return;
+            if (!sorted.length) return;
             const first = sorted[0], last = sorted[sorted.length - 1];
             const total = last.amount - first.amount;
-            const avg = total / (sorted.length - 1);
+            const avg = sorted.length > 1 ? total / (sorted.length - 1) : 0;
             const isUp = total >= 0;
             const pct = first.amount > 0 ? ((total / first.amount) * 100).toFixed(1) : 0;
+
+            // Header
+            const balEl = $('detailCurrentBalance');
+            const chgEl = $('detailChangeLabel');
+            if (balEl) balEl.textContent = formatCurrency(last.amount);
+            if (chgEl) {
+                chgEl.textContent = `${isUp ? '▲' : '▼'} ${formatCurrency(Math.abs(total))}  (${pct}%)`;
+                chgEl.style.color = isUp ? '#22c55e' : '#ef4444';
+            }
+
+            const bg = 'background:rgba(0,0,0,0.04)';
             $('detailStats').innerHTML = `
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center">
-                    <div class="text-xs text-gray-400 mb-1">יתרה נוכחית</div>
-                    <div class="font-bold text-gray-800 dark:text-white text-sm">${formatCurrency(last.amount)}</div>
+                <div style="${bg}" class="dark:bg-gray-800 rounded-2xl p-3 text-center">
+                    <div class="text-xs text-gray-400 mb-1">יתרה ראשונה</div>
+                    <div class="font-bold text-gray-700 dark:text-gray-300 text-sm">${formatCurrency(first.amount)}</div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center">
+                <div style="${bg}" class="dark:bg-gray-800 rounded-2xl p-3 text-center">
                     <div class="text-xs text-gray-400 mb-1">סה"כ שינוי</div>
                     <div class="font-bold ${isUp ? 'text-green-500' : 'text-red-500'} text-sm">${isUp ? '+' : ''}${formatCurrency(total)}</div>
                     <div class="text-xs ${isUp ? 'text-green-400' : 'text-red-400'}">${pct}%</div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center">
+                <div style="${bg}" class="dark:bg-gray-800 rounded-2xl p-3 text-center">
                     <div class="text-xs text-gray-400 mb-1">ממוצע חודשי</div>
                     <div class="font-bold ${avg >= 0 ? 'text-green-500' : 'text-red-500'} text-sm">${avg >= 0 ? '+' : ''}${formatCurrency(avg)}</div>
                 </div>
             `;
-            $('detailTitle').textContent = `${formatMonth(first.month)} — ${formatMonth(last.month)}`;
+            $('detailTitle').textContent = `${formatMonth(first.month)} — ${formatMonth(last.month)}  ·  ${sorted.length} חודשים`;
         }
 
         function renderDetailChart() {
@@ -1157,9 +1177,9 @@
             grad.addColorStop(1, isUp ? 'rgba(34,197,94,0)' : 'rgba(239,68,68,0)');
 
             detailChart = new Chart(ctx, buildChartConfig({
-                filtered: sorted, isMobile: false,
+                filtered: sorted, isMobile: window.innerWidth < 768,
                 lineColor, grad, gridColor, textColor,
-                showDots: true, showXAxis: true,
+                showDots: sorted.length <= 36, showXAxis: true,
             }));
 
             // Touch scrub on detail chart
