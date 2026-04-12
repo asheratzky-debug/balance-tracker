@@ -285,6 +285,10 @@
         </div><!-- /main-content -->
     </div><!-- /max-w-4xl -->
 
+    <!-- Hidden file input for import (must be in DOM for iOS) -->
+    <input type="file" id="importFileInput" accept="*/*"
+           style="position:fixed;top:-300px;left:-300px;opacity:0;width:1px;height:1px;">
+
     <!-- Bottom Navigation (mobile only) -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="navHome">
@@ -1732,15 +1736,11 @@
         }
 
         function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            // iOS is picky — '*/*' shows all files including JSON from Files app
-            input.accept = '*/*';
-            input.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
-            document.body.appendChild(input);
+            const input = $('importFileInput');
+            input.value = '';
             input.onchange = (e) => {
                 const file = e.target.files[0];
-                if (!file) { document.body.removeChild(input); return; }
+                if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     let data;
@@ -1748,31 +1748,24 @@
                         data = JSON.parse(ev.target.result);
                     } catch (err) {
                         alert('שגיאה בקריאת הקובץ — וודא שזהו קובץ JSON תקין.');
-                        document.body.removeChild(input);
                         return;
                     }
-                    // Lenient validation: accept file if it has any known key
                     const hasEntries = Array.isArray(data.balanceEntries) && data.balanceEntries.length > 0;
                     const hasPortfolio = data.portfolioData != null;
                     if (!hasEntries && !hasPortfolio) {
                         alert('קובץ לא מוכר — חסרים נתוני יתרות או תיק נכסים.');
-                        document.body.removeChild(input);
                         return;
                     }
                     const existing = JSON.parse(localStorage.getItem('balanceEntries') || '[]');
                     const msg = hasEntries
                         ? `הקובץ מכיל ${data.balanceEntries.length} רשומות יתרה.\nהחלפה תמחק ${existing.length} רשומות קיימות. להמשיך?`
                         : 'הקובץ מכיל נתוני תיק נכסים בלבד. להמשיך?';
-                    if (!confirm(msg)) {
-                        document.body.removeChild(input);
-                        return;
-                    }
+                    if (!confirm(msg)) return;
                     if (hasEntries) localStorage.setItem('balanceEntries', JSON.stringify(data.balanceEntries));
                     if (data.monthlyIncomeByYear) localStorage.setItem('monthlyIncomeByYear', JSON.stringify(data.monthlyIncomeByYear));
                     if (data.portfolioData) localStorage.setItem('portfolioData', JSON.stringify(data.portfolioData));
                     if (data.loveDashboardData) localStorage.setItem('loveDashboardData', JSON.stringify(data.loveDashboardData));
                     if (data.darkMode != null) localStorage.setItem('darkMode', data.darkMode);
-                    document.body.removeChild(input);
                     showFeedbackMsg('✓ הנתונים יובאו בהצלחה! מרענן...');
                     setTimeout(() => location.reload(), 1500);
                 };
