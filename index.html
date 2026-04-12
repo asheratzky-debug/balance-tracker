@@ -39,6 +39,17 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .note-badge { font-size: 10px; }
 
+        /* Detail modal slide-up */
+        #detailChartModal { align-items: flex-end; }
+        #detailChartInner {
+            animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+            max-height: 90vh;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
         /* ====== MOBILE LAYOUT ====== */
         @media (max-width: 767px) {
             .desktop-only { display: none !important; }
@@ -298,6 +309,31 @@
             <span>Import</span>
         </button>
     </nav>
+
+    <!-- Detail Chart Modal -->
+    <div id="detailChartModal" class="fixed inset-0 bg-black/80 hidden items-end justify-center z-50" onclick="if(event.target===this)closeDetailChart()">
+        <div class="w-full max-w-2xl rounded-t-3xl shadow-2xl overflow-hidden" style="background: var(--detail-bg, #fff);"
+             id="detailChartInner">
+            <style>
+                #detailChartInner { background: #fff; }
+                .dark #detailChartInner { background: #1a1a2e; }
+            </style>
+            <div class="flex justify-between items-center px-5 pt-5 pb-3">
+                <div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 font-medium">כל התקופה</div>
+                    <div class="text-xl font-bold text-gray-800 dark:text-white" id="detailTitle">גרף מפורט</div>
+                </div>
+                <button onclick="closeDetailChart()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-3xl leading-none w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">&times;</button>
+            </div>
+            <div id="detailHoverInfo" class="px-5 h-7 text-sm flex items-center gap-2 text-gray-600 dark:text-gray-300"></div>
+            <div style="height: 340px; padding: 0 12px 8px;">
+                <canvas id="detailChartCanvas"></canvas>
+            </div>
+            <div class="px-5 pb-6 pt-2">
+                <div class="grid grid-cols-3 gap-3" id="detailStats"></div>
+            </div>
+        </div>
+    </div>
 
     <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-6 m-4 max-w-sm w-full">
@@ -882,38 +918,48 @@
             `;
         }
 
-        function renderChart() {
-            const canvas = $('balanceChart');
-            const filtered = filteredEntries();
-
-            if (!filtered.length) {
-                canvas.style.display = 'none';
-                $('noDataChart').classList.remove('hidden');
-                if (chart) { chart.destroy(); chart = null; }
-                updateBalanceHeader();
-                return;
+        // ====== Year-axis plugin ======
+        const yearAxisPlugin = {
+            id: 'yearAxis',
+            afterDraw(ch) {
+                const filtered = filteredEntries();
+                if (filtered.length < 2) return;
+                const { ctx, chartArea } = ch;
+                const totalW = chartArea.right - chartArea.left;
+                ctx.save();
+                ctx.font = `500 11px 'Heebo', sans-serif`;
+                ctx.textBaseline = 'top';
+                let lastYear = null;
+                filtered.forEach((e, i) => {
+                    const year = e.month.split('-')[0];
+                    const x = chartArea.left + (filtered.length === 1 ? totalW / 2 : (i / (filtered.length - 1)) * totalW);
+                    if (year !== lastYear) {
+                        // Vertical dashed separator (not for first)
+                        if (lastYear !== null) {
+                            ctx.strokeStyle = darkMode ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.09)';
+                            ctx.lineWidth = 1;
+                            ctx.setLineDash([3, 4]);
+                            ctx.beginPath();
+                            ctx.moveTo(x, chartArea.top);
+                            ctx.lineTo(x, chartArea.bottom + 2);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
+                        // Year label
+                        ctx.fillStyle = darkMode ? '#777' : '#bbb';
+                        ctx.textAlign = i === 0 ? 'left' : (i === filtered.length - 1 ? 'right' : 'center');
+                        ctx.fillText(year, x, chartArea.bottom + 6);
+                        lastYear = year;
+                    }
+                });
+                ctx.restore();
             }
+        };
 
-            canvas.style.display = 'block';
-            $('noDataChart').classList.add('hidden');
-
-            const isMobile = window.innerWidth < 768;
+        function buildChartConfig({ filtered, isMobile, lineColor, grad, gridColor, textColor, showDots, showXAxis }) {
             const labels = filtered.map(e => formatMonthShort(e.month));
             const data = filtered.map(e => e.amount);
-            const isUp = data.length < 2 || data[data.length - 1] >= data[0];
-            const lineColor = isUp ? '#22c55e' : '#ef4444';
-            const gridColor = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-            const textColor = darkMode ? '#777' : '#aaa';
-
-            if (chart) { chart.destroy(); chart = null; }
-
-            const ctx = canvas.getContext('2d');
-            const chartH = isMobile ? 200 : 300;
-            const grad = ctx.createLinearGradient(0, 0, 0, chartH);
-            grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)');
-            grad.addColorStop(1, isUp ? 'rgba(34,197,94,0)' : 'rgba(239,68,68,0)');
-
-            chart = new Chart(ctx, {
+            return {
                 type: 'line',
                 data: {
                     labels,
@@ -921,10 +967,11 @@
                         data,
                         borderColor: lineColor,
                         backgroundColor: grad,
-                        borderWidth: 2.5,
+                        borderWidth: showDots ? 2 : 2.5,
                         fill: true,
                         tension: 0.35,
-                        pointRadius: 0,
+                        pointRadius: showDots ? 4 : 0,
+                        pointBackgroundColor: lineColor,
                         pointHoverRadius: 5,
                         pointHoverBackgroundColor: lineColor,
                         pointHoverBorderColor: darkMode ? '#1a1a2e' : '#fff',
@@ -935,13 +982,14 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
-                    animation: { duration: 400 },
+                    animation: { duration: 350 },
+                    layout: { padding: { bottom: 28, left: 2, right: 2 } },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
                             enabled: !isMobile,
                             callbacks: {
-                                label: ctx => formatCurrency(ctx.parsed.y),
+                                label: c => formatCurrency(c.parsed.y),
                                 title: items => items[0].label,
                             },
                             backgroundColor: darkMode ? '#1e1e3a' : '#fff',
@@ -960,27 +1008,68 @@
                             display: !isMobile,
                             ticks: {
                                 callback: v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}K` : v,
-                                color: textColor,
-                                maxTicksLimit: 5,
+                                color: textColor, maxTicksLimit: 5,
                                 font: { family: 'Heebo', size: 11 },
                             },
                             grid: { color: gridColor },
                         },
                         x: {
-                            display: !isMobile,
-                            ticks: { color: textColor, maxTicksLimit: 7, maxRotation: 0, font: { family: 'Heebo', size: 11 } },
+                            display: showXAxis,
+                            ticks: { color: textColor, maxTicksLimit: 8, maxRotation: 0, font: { family: 'Heebo', size: 11 } },
                             grid: { display: false },
                         }
                     },
-                }
-            });
+                },
+                plugins: [yearAxisPlugin],
+            };
+        }
 
-            // Mobile touch support
+        function renderChart() {
+            const canvas = $('balanceChart');
+            const filtered = filteredEntries();
+
+            if (!filtered.length) {
+                canvas.style.display = 'none';
+                $('noDataChart').classList.remove('hidden');
+                if (chart) { chart.destroy(); chart = null; }
+                updateBalanceHeader();
+                return;
+            }
+            canvas.style.display = 'block';
+            $('noDataChart').classList.add('hidden');
+
+            const isMobile = window.innerWidth < 768;
+            const data = filtered.map(e => e.amount);
+            const isUp = data.length < 2 || data[data.length - 1] >= data[0];
+            const lineColor = isUp ? '#22c55e' : '#ef4444';
+            const gridColor = darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+            const textColor = darkMode ? '#777' : '#aaa';
+
+            if (chart) { chart.destroy(); chart = null; }
+
+            const ctx = canvas.getContext('2d');
+            const chartH = isMobile ? 200 : 300;
+            const grad = ctx.createLinearGradient(0, 0, 0, chartH);
+            grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)');
+            grad.addColorStop(1, isUp ? 'rgba(34,197,94,0)' : 'rgba(239,68,68,0)');
+
+            chart = new Chart(ctx, buildChartConfig({
+                filtered, isMobile, lineColor, grad, gridColor, textColor,
+                showDots: false, showXAxis: false,
+            }));
+
+            // Click/tap → open detail chart
+            canvas.style.cursor = 'pointer';
+            canvas.onclick = () => openDetailChart();
+
+            // Mobile touch scrub
             if (isMobile) {
                 canvas.removeEventListener('touchstart', _chartTouchHandler);
                 canvas.removeEventListener('touchmove', _chartTouchHandler);
                 canvas.removeEventListener('touchend', _chartTouchEnd);
+                let _touchMoved = false;
                 _chartTouchHandler = (e) => {
+                    _touchMoved = true;
                     const touch = e.touches[0];
                     const rect = canvas.getBoundingClientRect();
                     const x = touch.clientX - rect.left;
@@ -988,8 +1077,12 @@
                     const idx = Math.round(ratio * (filtered.length - 1));
                     updateChartHoverInfo(filtered[idx]);
                 };
-                _chartTouchEnd = () => updateChartHoverInfo(null);
-                canvas.addEventListener('touchstart', _chartTouchHandler, { passive: true });
+                _chartTouchEnd = (e) => {
+                    if (!_touchMoved) openDetailChart();
+                    _touchMoved = false;
+                    updateChartHoverInfo(null);
+                };
+                canvas.addEventListener('touchstart', (e) => { _touchMoved = false; }, { passive: true });
                 canvas.addEventListener('touchmove', _chartTouchHandler, { passive: true });
                 canvas.addEventListener('touchend', _chartTouchEnd, { passive: true });
             }
@@ -999,6 +1092,102 @@
         }
 
         let _chartTouchHandler = null, _chartTouchEnd = null;
+
+        // ====== Detail Chart Modal ======
+        let detailChart = null;
+
+        function openDetailChart() {
+            if (!entries.length) return;
+            const modal = $('detailChartModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderDetailStats();
+            setTimeout(() => renderDetailChart(), 60);
+        }
+        window.openDetailChart = openDetailChart;
+
+        function closeDetailChart() {
+            $('detailChartModal').classList.add('hidden');
+            $('detailChartModal').classList.remove('flex');
+            if (detailChart) { detailChart.destroy(); detailChart = null; }
+        }
+        window.closeDetailChart = closeDetailChart;
+
+        function renderDetailStats() {
+            const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+            if (sorted.length < 2) return;
+            const first = sorted[0], last = sorted[sorted.length - 1];
+            const total = last.amount - first.amount;
+            const avg = total / (sorted.length - 1);
+            const isUp = total >= 0;
+            const pct = first.amount > 0 ? ((total / first.amount) * 100).toFixed(1) : 0;
+            $('detailStats').innerHTML = `
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center">
+                    <div class="text-xs text-gray-400 mb-1">יתרה נוכחית</div>
+                    <div class="font-bold text-gray-800 dark:text-white text-sm">${formatCurrency(last.amount)}</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center">
+                    <div class="text-xs text-gray-400 mb-1">סה"כ שינוי</div>
+                    <div class="font-bold ${isUp ? 'text-green-500' : 'text-red-500'} text-sm">${isUp ? '+' : ''}${formatCurrency(total)}</div>
+                    <div class="text-xs ${isUp ? 'text-green-400' : 'text-red-400'}">${pct}%</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 text-center">
+                    <div class="text-xs text-gray-400 mb-1">ממוצע חודשי</div>
+                    <div class="font-bold ${avg >= 0 ? 'text-green-500' : 'text-red-500'} text-sm">${avg >= 0 ? '+' : ''}${formatCurrency(avg)}</div>
+                </div>
+            `;
+            $('detailTitle').textContent = `${formatMonth(first.month)} — ${formatMonth(last.month)}`;
+        }
+
+        function renderDetailChart() {
+            const canvas = $('detailChartCanvas');
+            if (!canvas) return;
+            if (detailChart) { detailChart.destroy(); detailChart = null; }
+
+            const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
+            const data = sorted.map(e => e.amount);
+            const isUp = data.length < 2 || data[data.length - 1] >= data[0];
+            const lineColor = isUp ? '#22c55e' : '#ef4444';
+            const gridColor = darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+            const textColor = darkMode ? '#888' : '#999';
+
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 340);
+            grad.addColorStop(0, isUp ? 'rgba(34,197,94,0.28)' : 'rgba(239,68,68,0.28)');
+            grad.addColorStop(1, isUp ? 'rgba(34,197,94,0)' : 'rgba(239,68,68,0)');
+
+            detailChart = new Chart(ctx, buildChartConfig({
+                filtered: sorted, isMobile: false,
+                lineColor, grad, gridColor, textColor,
+                showDots: true, showXAxis: true,
+            }));
+
+            // Touch scrub on detail chart
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                canvas.addEventListener('touchmove', (e) => {
+                    const touch = e.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    const x = touch.clientX - rect.left;
+                    const ratio = Math.max(0, Math.min(1, x / rect.width));
+                    const idx = Math.round(ratio * (sorted.length - 1));
+                    const entry = sorted[idx];
+                    const el = $('detailHoverInfo');
+                    if (el && entry) {
+                        const prev = idx > 0 ? sorted[idx - 1] : null;
+                        const chg = prev ? entry.amount - prev.amount : 0;
+                        const isEntryUp = chg >= 0;
+                        el.innerHTML = `<span class="font-bold text-gray-800 dark:text-white">${formatMonth(entry.month)}</span>
+                            &nbsp;<span class="font-bold text-lg">${formatCurrency(entry.amount)}</span>
+                            &nbsp;<span class="${isEntryUp ? 'text-green-500' : 'text-red-500'} text-sm">${isEntryUp ? '▲' : '▼'}${formatCurrency(Math.abs(chg))}</span>`;
+                    }
+                }, { passive: true });
+                canvas.addEventListener('touchend', () => {
+                    const el = $('detailHoverInfo');
+                    if (el) el.innerHTML = '';
+                }, { passive: true });
+            }
+        }
 
         // Yearly Stats Functions
         function openYearlyStats() {
