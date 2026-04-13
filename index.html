@@ -20,7 +20,7 @@
 
         /* Dark mode */
         .dark .gradient-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
-        .dark .card { background: rgba(30,30,50,0.95); color: #e0e0e0; }
+        .dark .card { background: rgba(38,38,62,0.98); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.07); }
         .dark .card h2, .dark .card h3 { color: #f0f0f0; }
         .dark .card input, .dark .card textarea { background: #2a2a4a; border-color: #3a3a5a; color: #e0e0e0; }
         .dark .card input::placeholder, .dark .card textarea::placeholder { color: #888; }
@@ -54,7 +54,7 @@
             .desktop-only { display: none !important; }
             body { padding-bottom: 76px !important; padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
             .max-w-4xl { padding: 0 !important; }
-            .main-content { padding: 10px 0 0; }
+            .main-content { padding: 10px 12px 0; }
         }
         @media (min-width: 768px) {
             .mobile-only { display: none !important; }
@@ -131,10 +131,6 @@
         @media (max-width: 767px) {
             .card { border-radius: 16px; }
             .rounded-2xl { border-radius: 16px; }
-            /* Non-chart cards get side margins */
-            .main-content > * { margin-left: 12px; margin-right: 12px; }
-            /* Chart card goes full-width edge-to-edge */
-            .card-full { border-radius: 0 !important; margin-left: 0 !important; margin-right: 0 !important; }
         }
     </style>
 </head>
@@ -187,6 +183,7 @@
                 <button class="range-btn active" data-range="3M" onclick="setRange('3M')">3M</button>
                 <button class="range-btn" data-range="6M" onclick="setRange('6M')">6M</button>
                 <button class="range-btn" data-range="1Y" onclick="setRange('1Y')">1Y</button>
+                <button class="range-btn" data-range="YTD" onclick="setRange('YTD')">YTD</button>
                 <button class="range-btn" data-range="all" onclick="setRange('all')">הכל</button>
             </div>
             <div class="chart-wrap px-2 pb-3 md:px-4 md:pb-4 relative">
@@ -919,6 +916,11 @@
         function filteredEntries() {
             const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
             if (!currentRange || currentRange === 'all') return sorted;
+            if (currentRange === 'YTD') {
+                const yr = new Date().getFullYear().toString();
+                const ytd = sorted.filter(e => e.month.startsWith(yr));
+                return ytd.length >= 2 ? ytd : sorted.slice(-Math.max(ytd.length || 2, 2));
+            }
             const n = { '3M': 3, '6M': 6, '1Y': 12 }[currentRange] || sorted.length;
             return sorted.slice(-Math.max(n, 2));
         }
