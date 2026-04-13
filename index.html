@@ -54,7 +54,7 @@
             .desktop-only { display: none !important; }
             body { padding-bottom: 76px !important; padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
             .max-w-4xl { padding: 0 !important; }
-            .main-content { padding: 12px 12px 0; }
+            .main-content { padding: 10px 0 0; }
         }
         @media (min-width: 768px) {
             .mobile-only { display: none !important; }
@@ -108,7 +108,10 @@
 
         /* Chart height responsive */
         .chart-wrap { height: 300px; }
-        @media (max-width: 767px) { .chart-wrap { height: 200px; } }
+        @media (max-width: 767px) {
+            .chart-wrap { height: 230px; }
+            .chart-wrap.px-2 { padding-left: 0 !important; padding-right: 0 !important; }
+        }
 
         /* Entry cards (mobile) */
         .entry-card {
@@ -126,8 +129,12 @@
         }
         .mobile-card { border-radius: 20px; overflow: hidden; }
         @media (max-width: 767px) {
-            .card { border-radius: 20px; }
-            .rounded-2xl { border-radius: 20px; }
+            .card { border-radius: 16px; }
+            .rounded-2xl { border-radius: 16px; }
+            /* Non-chart cards get side margins */
+            .main-content > * { margin-left: 12px; margin-right: 12px; }
+            /* Chart card goes full-width edge-to-edge */
+            .card-full { border-radius: 0 !important; margin-left: 0 !important; margin-right: 0 !important; }
         }
     </style>
 </head>
@@ -167,7 +174,7 @@
 
         <div class="main-content">
 
-        <div class="card rounded-2xl shadow-xl mb-4 md:mb-6 overflow-hidden">
+        <div class="card card-full rounded-2xl shadow-xl mb-3 md:mb-6 overflow-hidden">
             <!-- Desktop title -->
             <div class="desktop-only flex justify-between items-center px-6 pt-6 pb-2">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">גרף יתרות</h2>
