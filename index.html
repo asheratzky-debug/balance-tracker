@@ -382,8 +382,8 @@
         </div>
     </div>
 
-    <div id="yearlyStatsModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+    <div id="yearlyStatsModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-2 md:p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div class="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-4 border-b">
                 <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📊 נתונים שנתיים</h3>
                 <button onclick="closeYearlyStats()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">&times;</button>
@@ -1366,68 +1366,65 @@
                 const totalMonthlyIncome = yearMonthlyIncome.reduce((sum, item) => sum + (item.amount || 0), 0);
 
                 html += `
-                    <div class="mb-6 p-5 bg-gray-100 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
-                        <h4 class="text-xl font-bold text-purple-600 dark:text-purple-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600">${year}</h4>
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+                    <div class="mb-5 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+                        <h4 class="text-lg font-bold text-purple-600 dark:text-purple-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">${year}</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
                                 <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">חיסכון שנתי כולל</div>
-                                <div class="text-lg font-bold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${yearlySavings >= 0 ? '+' : ''}${formatCurrency(yearlySavings)}</div>
+                                <div class="text-base font-bold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${yearlySavings >= 0 ? '+' : ''}${formatCurrency(yearlySavings)}</div>
                                 ${yoyChange}
                             </div>
-                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חיסכון חודשי</div>
-                                <div class="text-lg font-bold ${avgMonthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${avgMonthlySavings >= 0 ? '+' : ''}${formatCurrency(avgMonthlySavings)}</div>
-                            </div>
-                            <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">מספר חודשים</div>
-                                <div class="text-lg font-bold text-gray-800 dark:text-white">${yearEntries.length}</div>
+                            <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
+                                <div class="text-base font-bold ${avgMonthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${avgMonthlySavings >= 0 ? '+' : ''}${formatCurrency(avgMonthlySavings)}</div>
+                                <div class="text-xs text-gray-400 mt-0.5">${yearEntries.length} חודשים</div>
                             </div>
                         </div>
                         ${bestMonth && worstMonth ? `
-                        <div class="grid grid-cols-2 gap-3 mt-3">
-                            <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
                                 <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי טוב</div>
-                                <div class="font-bold text-green-700 dark:text-green-400">${formatMonth(bestMonth.month)}</div>
+                                <div class="font-bold text-green-700 dark:text-green-400 text-sm">${formatMonth(bestMonth.month)}</div>
                                 <div class="text-sm text-green-600 dark:text-green-500">+${formatCurrency(bestMonth.change)}</div>
                             </div>
-                            <div class="bg-red-100 dark:bg-red-900/30 p-4 rounded-lg">
+                            <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-lg">
                                 <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי חלש</div>
-                                <div class="font-bold text-red-700 dark:text-red-400">${formatMonth(worstMonth.month)}</div>
+                                <div class="font-bold text-red-700 dark:text-red-400 text-sm">${formatMonth(worstMonth.month)}</div>
                                 <div class="text-sm text-red-600 dark:text-red-500">${formatCurrency(worstMonth.change)}</div>
                             </div>
                         </div>
                         ` : ''}
 
                         <!-- Monthly Income Section -->
-                        <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">📅 הכנסות חודשיות קבועות</div>
-                                <div class="text-lg font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome)}/חודש</div>
+                        <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">📅 הכנסות קבועות</div>
+                                <div class="text-sm font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome)}/חודש</div>
                             </div>
-                            <div id="monthlyIncome-${year}" class="space-y-2">
+                            <div id="monthlyIncome-${year}" class="space-y-1.5">
                                 ${yearMonthlyIncome.map(item => `
                                     <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded text-sm">
-                                        <span class="flex items-center gap-2">
-                                            <span class="px-2 py-0.5 rounded text-xs ${getTypeColor(item.type)}">${item.type}</span>
-                                            ${esc(item.description)}
+                                        <span class="flex items-center gap-1.5 min-w-0">
+                                            <span class="px-1.5 py-0.5 rounded text-xs ${getTypeColor(item.type)} shrink-0">${item.type}</span>
+                                            <span class="truncate text-gray-700 dark:text-gray-300">${esc(item.description)}</span>
                                         </span>
-                                        <span class="flex items-center gap-2">
-                                            <span class="font-semibold">${formatCurrency(item.amount)}</span>
-                                            <button onclick="deleteMonthlyIncomeItem('${year}', ${item.id})" class="text-red-500 hover:text-red-700">×</button>
+                                        <span class="flex items-center gap-1.5 shrink-0 mr-2">
+                                            <span class="font-semibold text-gray-800 dark:text-white">${formatCurrency(item.amount)}</span>
+                                            <button onclick="deleteMonthlyIncomeItem('${year}', ${item.id})" class="text-red-500 hover:text-red-700 text-base leading-none">×</button>
                                         </span>
                                     </div>
                                 `).join('')}
                             </div>
-                            <div class="mt-3 flex gap-2">
-                                <input type="text" id="incomeDesc-${year}" placeholder="תיאור" class="flex-1 px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600">
-                                <input type="number" id="incomeAmount-${year}" placeholder="סכום" class="w-24 px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600">
-                                <select id="incomeType-${year}" class="px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600">
+                            <div class="mt-2 grid grid-cols-2 gap-1.5">
+                                <input type="text" id="incomeDesc-${year}" placeholder="תיאור" class="col-span-2 px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                                <input type="number" id="incomeAmount-${year}" placeholder="סכום ₪" inputmode="decimal" class="px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                                <select id="incomeType-${year}" class="px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
                                     <option value="משכורת">משכורת</option>
                                     <option value="שכר דירה">שכר דירה</option>
                                     <option value="הוראת קבע">הוראת קבע</option>
                                     <option value="אחר">אחר</option>
                                 </select>
-                                <button onclick="addMonthlyIncomeItem('${year}')" class="px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600">+</button>
+                                <button onclick="addMonthlyIncomeItem('${year}')" class="col-span-2 py-2 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 font-medium">+ הוסף</button>
                             </div>
                         </div>
                     </div>
@@ -1451,26 +1448,26 @@
             const totalGrowthPct = firstEntry.amount > 0 ? ((totalSavings / firstEntry.amount) * 100).toFixed(1) : 0;
 
             html = `
-                <div class="mb-6 p-5 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 rounded-xl border border-purple-200 dark:border-purple-700">
-                    <h4 class="text-xl font-bold text-purple-700 dark:text-purple-300 mb-4">📈 סיכום כללי</h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">תקופה: ${formatMonth(firstEntry.month)} עד ${formatMonth(lastEntry.month)} (${monthsDiff} חודשים)</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                <div class="mb-4 p-3 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 rounded-xl border border-purple-200 dark:border-purple-700">
+                    <h4 class="text-lg font-bold text-purple-700 dark:text-purple-300 mb-1">📈 סיכום כללי</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">${formatMonth(firstEntry.month)} עד ${formatMonth(lastEntry.month)} · ${monthsDiff} חודשים</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה התחלתית</div>
-                            <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(firstEntry.amount)}</div>
+                            <div class="text-sm font-bold text-gray-700 dark:text-gray-300">${formatCurrency(firstEntry.amount)}</div>
                         </div>
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה נוכחית</div>
-                            <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(lastEntry.amount)}</div>
+                            <div class="text-sm font-bold text-gray-700 dark:text-gray-300">${formatCurrency(lastEntry.amount)}</div>
                         </div>
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">סה"כ חיסכון</div>
-                            <div class="text-lg font-bold ${totalSavings >= 0 ? 'text-green-600' : 'text-red-600'}">${totalSavings >= 0 ? '+' : ''}${formatCurrency(totalSavings)}</div>
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">סה"כ שינוי</div>
+                            <div class="text-sm font-bold ${totalSavings >= 0 ? 'text-green-600' : 'text-red-600'}">${totalSavings >= 0 ? '+' : ''}${formatCurrency(totalSavings)}</div>
                             <div class="text-xs ${totalSavings >= 0 ? 'text-green-500' : 'text-red-500'}">(${totalGrowthPct}%)</div>
                         </div>
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
-                            <div class="text-lg font-bold ${totalAvgMonthly >= 0 ? 'text-green-600' : 'text-red-600'}">${totalAvgMonthly >= 0 ? '+' : ''}${formatCurrency(totalAvgMonthly)}</div>
+                            <div class="text-sm font-bold ${totalAvgMonthly >= 0 ? 'text-green-600' : 'text-red-600'}">${totalAvgMonthly >= 0 ? '+' : ''}${formatCurrency(totalAvgMonthly)}</div>
                         </div>
                     </div>
                 </div>
