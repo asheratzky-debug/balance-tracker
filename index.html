@@ -207,7 +207,7 @@
                     📊 נתונים שנתיים
                 </button>
             </div>
-            <div id="insightsContent" class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4"></div>
+            <div id="insightsContent" class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 items-start"></div>
         </div>
 
         <div class="card rounded-2xl shadow-xl p-4 md:p-6 mb-4 md:mb-6">
@@ -619,6 +619,14 @@
         function formatCurrency(n) {
             return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(n);
         }
+        // Compact format for tight UI cells: 1,672,689 → ₪1.67M
+        function formatCompact(n) {
+            const abs = Math.abs(n);
+            const sign = n < 0 ? '-' : '';
+            if (abs >= 1_000_000) return `${sign}₪${(abs/1_000_000).toFixed(2)}M`;
+            if (abs >= 1_000)    return `${sign}₪${(abs/1_000).toFixed(1)}K`;
+            return `${sign}₪${abs.toFixed(0)}`;
+        }
 
         function saveAndRender() {
             entries.sort((a, b) => a.month.localeCompare(b.month));
@@ -783,30 +791,30 @@
             $('insightsContent').innerHTML = `
                 <div class="bg-purple-50 p-3 rounded-xl">
                     <div class="text-xs text-gray-500 mb-1">שינוי כולל</div>
-                    <div class="text-base font-bold ${totalChange >= 0 ? 'text-green-600' : 'text-red-600'}">${totalChange >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(totalChange))}</div>
+                    <div class="text-lg font-bold ${totalChange >= 0 ? 'text-green-600' : 'text-red-600'}">${totalChange >= 0 ? '▲' : '▼'} ${formatCompact(Math.abs(totalChange))}</div>
                     <div class="text-xs text-gray-500 mt-0.5">${pct}%</div>
                 </div>
                 <div class="bg-green-50 p-3 rounded-xl">
                     <div class="text-xs text-gray-500 mb-1">ממוצע חודשי</div>
-                    <div class="text-base font-bold ${avg >= 0 ? 'text-green-600' : 'text-red-600'}">${avg >= 0 ? '+' : ''}${formatCurrency(avg)}</div>
+                    <div class="text-lg font-bold ${avg >= 0 ? 'text-green-600' : 'text-red-600'}">${avg >= 0 ? '+' : ''}${formatCompact(avg)}</div>
                 </div>
                 <div class="bg-blue-50 p-3 rounded-xl">
                     <div class="text-xs text-gray-500 mb-1">צפי הבא</div>
-                    <div class="text-base font-bold text-blue-600">${formatCurrency(latest + avg)}</div>
+                    <div class="text-lg font-bold text-blue-600">${formatCompact(latest + avg)}</div>
                 </div>
                 <div class="bg-emerald-50 p-3 rounded-xl">
                     <div class="text-xs text-gray-500 mb-1">החודש הכי טוב</div>
                     <div class="text-sm font-bold text-green-600">${formatMonth(best.m)}</div>
-                    <div class="text-xs text-green-700 mt-0.5">+${formatCurrency(best.c)}</div>
+                    <div class="text-xs text-green-700 mt-0.5">+${formatCompact(best.c)}</div>
                 </div>
                 <div class="bg-red-50 p-3 rounded-xl">
                     <div class="text-xs text-gray-500 mb-1">החודש הכי חלש</div>
                     <div class="text-sm font-bold text-red-600">${formatMonth(worst.m)}</div>
-                    <div class="text-xs text-red-700 mt-0.5">${formatCurrency(worst.c)}</div>
+                    <div class="text-xs text-red-700 mt-0.5">${formatCompact(worst.c)}</div>
                 </div>
                 <div class="bg-amber-50 p-3 rounded-xl">
                     <div class="text-xs text-gray-500 mb-1">סה"כ חודשים</div>
-                    <div class="text-base font-bold text-amber-600">${entries.length}</div>
+                    <div class="text-lg font-bold text-amber-600">${entries.length}</div>
                 </div>
             `;
         }
