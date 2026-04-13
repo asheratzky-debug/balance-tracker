@@ -274,13 +274,13 @@
             </div>
         </div>
 
-        <div class="desktop-only text-center mt-6">
+        <div class="text-center mt-4 mb-2">
             <div class="flex justify-center gap-3 mb-3">
-                <button onclick="exportData()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-sm font-medium">
-                    📥 Export Data
+                <button onclick="exportData()" class="bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-sm font-medium active:scale-95">
+                    📥 Export
                 </button>
-                <button onclick="importData()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-sm font-medium">
-                    📤 Import Data
+                <button onclick="importData()" class="bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-sm font-medium active:scale-95">
+                    📤 Import
                 </button>
             </div>
             <p class="text-white/60 text-sm">הנתונים נשמרים אוטומטית בדפדפן</p>
@@ -296,25 +296,17 @@
 
     <!-- Bottom Navigation (mobile only) -->
     <nav class="bottom-nav">
-        <button class="nav-item active" id="navHome">
-            <span class="nav-icon">📊</span>
-            <span>יתרות</span>
-        </button>
         <button class="nav-item" onclick="window.location='portfolio.html'">
             <span class="nav-icon">💼</span>
             <span>תיק נכסים</span>
         </button>
+        <button class="nav-item active" id="navHome">
+            <span class="nav-icon">📊</span>
+            <span>יתרות</span>
+        </button>
         <button class="nav-item" onclick="openAnnualReports()">
             <span class="nav-icon">📈</span>
             <span>דוחות</span>
-        </button>
-        <button class="nav-item" onclick="exportData()">
-            <span class="nav-icon">📥</span>
-            <span>Export</span>
-        </button>
-        <button class="nav-item" onclick="importData()">
-            <span class="nav-icon">📤</span>
-            <span>Import</span>
         </button>
     </nav>
 
