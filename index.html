@@ -49,6 +49,7 @@
         }
 
         /* ====== MOBILE LAYOUT ====== */
+        html, body { overflow-x: hidden; }
         @media (max-width: 767px) {
             .desktop-only { display: none !important; }
             body { padding-bottom: 76px !important; padding-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
@@ -153,7 +154,7 @@
         </div>
 
         <!-- Mobile Header -->
-        <div class="mobile-only flex justify-between items-center px-4 pt-14 pb-3">
+        <div class="mobile-only flex justify-between items-center px-4 pb-3" style="padding-top: max(52px, env(safe-area-inset-top, 0px) + 12px);">
             <div>
                 <div class="text-white/70 text-sm font-medium">יתרה נוכחית</div>
                 <div id="mobileBalanceValue" class="balance-big text-white">-</div>
@@ -315,10 +316,10 @@
 
     <!-- Detail Chart Modal (true full screen via inline styles) -->
     <div id="detailChartModal"
-         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;flex-direction:column;overflow-y:auto;">
+         style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;flex-direction:column;overflow-y:auto;overflow-x:hidden;">
 
         <!-- Header -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:52px 20px 8px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:max(52px, env(safe-area-inset-top, 0px) + 12px) 20px 8px;">
             <div>
                 <div style="font-size:11px;letter-spacing:.06em;opacity:.5;margin-bottom:4px;">גרף מפורט</div>
                 <div style="font-size:26px;font-weight:700;" id="detailCurrentBalance">—</div>
@@ -981,7 +982,7 @@
         const yearAxisPlugin = {
             id: 'yearAxis',
             afterDraw(ch) {
-                const filtered = filteredEntries();
+                const filtered = ch.data._filteredData || filteredEntries();
                 if (filtered.length < 2) return;
                 const { ctx, chartArea } = ch;
                 const totalW = chartArea.right - chartArea.left;
@@ -1022,6 +1023,7 @@
                 type: 'line',
                 data: {
                     labels,
+                    _filteredData: filtered,
                     datasets: [{
                         data,
                         borderColor: lineColor,
@@ -1230,7 +1232,7 @@
             detailChart = new Chart(ctx, buildChartConfig({
                 filtered: sorted, isMobile,
                 lineColor, grad, gridColor, textColor,
-                showDots: sorted.length <= 36, showXAxis: true,
+                showDots: false, showXAxis: false,
                 yAxisRight: isMobile,   // on mobile: no y-axis anyway; on desktop: right side (RTL)
             }));
 
