@@ -932,12 +932,12 @@
         }
 
         function updateBalanceHeader() {
-            const sorted = [...entries].sort((a, b) => a.month.localeCompare(b.month));
-            if (!sorted.length) return;
-            const latest = sorted[sorted.length - 1];
-            const prev = sorted.length > 1 ? sorted[sorted.length - 2] : null;
-            const change = prev ? latest.amount - prev.amount : 0;
-            const changePct = prev && prev.amount > 0 ? ((change / prev.amount) * 100).toFixed(1) : 0;
+            const filtered = filteredEntries();
+            if (!filtered.length) return;
+            const latest = filtered[filtered.length - 1];
+            const first = filtered.length > 1 ? filtered[0] : null;
+            const change = first ? latest.amount - first.amount : 0;
+            const changePct = safePct(change, first ? first.amount : 0);
             const isUp = change >= 0;
             const changeStr = `${isUp ? '▲' : '▼'} ${formatCurrency(Math.abs(change))} (${changePct}%)`;
 
