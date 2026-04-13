@@ -1310,7 +1310,7 @@
                 yearlyData[year].push(e);
             });
 
-            const years = Object.keys(yearlyData).sort();
+            const years = Object.keys(yearlyData).sort().reverse();
             let html = '';
 
             // Create stats for each year
@@ -1558,7 +1558,7 @@
                 yearlyData[year].push(e);
             });
 
-            const years = Object.keys(yearlyData).sort();
+            const years = Object.keys(yearlyData).sort().reverse();
             let html = '';
 
             // Generate report for each year (starting from the second year for comparison)
