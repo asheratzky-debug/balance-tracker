@@ -1857,6 +1857,12 @@
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('service-worker.js');
+        // Auto-reload when a new service worker activates
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                window.location.reload();
+            }
+        });
     }
     </script>
 </body>
