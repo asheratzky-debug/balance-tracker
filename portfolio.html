@@ -616,7 +616,7 @@
                     <select id="salary-year" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
                         ${yearOptions}
                     </select>
-                    <input type="number" id="salary-amount" placeholder="משכורת חודשית (נטו)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="text" inputmode="decimal" id="salary-amount" placeholder="משכורת חודשית (נטו)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
                 </div>
                 <button onclick="addSalary()" class="bg-yellow-500 text-white px-4 py-2 rounded-xl hover:bg-yellow-600 transition mb-4">הוסף/עדכן משכורת</button>
                 <div id="salary-table">${renderSalaryTable()}</div>
@@ -663,7 +663,7 @@
 
         function addSalary() {
             const year = parseInt(document.getElementById('salary-year').value);
-            const monthlyAmount = parseFloat(document.getElementById('salary-amount').value);
+            const monthlyAmount = parseAmt('salary-amount');
 
             if (isNaN(monthlyAmount)) return alert('נא למלא סכום משכורת');
 
@@ -690,7 +690,7 @@
             return `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <input type="text" id="monthly-desc" placeholder="תיאור (משכורת, שכירות...)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
-                    <input type="number" id="monthly-amount" placeholder="סכום חודשי (נטו)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="text" inputmode="decimal" id="monthly-amount" placeholder="סכום חודשי (נטו)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
                     <select id="monthly-type" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
                         <option value="משכורת">משכורת</option>
                         <option value="שכר דירה">שכר דירה</option>
@@ -747,7 +747,7 @@
 
         function addMonthly() {
             const description = document.getElementById('monthly-desc').value;
-            const amount = parseFloat(document.getElementById('monthly-amount').value);
+            const amount = parseAmt('monthly-amount');
             const type = document.getElementById('monthly-type').value;
 
             if (!description || isNaN(amount)) return alert('נא למלא תיאור וסכום');
@@ -1155,6 +1155,11 @@
         }
 
         // ==================== Initialize ====================
+        function parseAmt(id) {
+            const val = (document.getElementById(id)?.value || '').replace(/,/g, '').replace(/\s/g, '');
+            return parseFloat(val);
+        }
+
         updateTotals();
     </script>
     <script>
