@@ -82,7 +82,7 @@
             gap: 3px; font-size: 11px; color: #9ca3af;
             cursor: pointer; transition: color 0.15s;
             border: none; background: none; padding: 8px 0;
-            font-family: 'Heebo', sans-serif;
+            font-family: 'Heebo', sans-serif; text-decoration: none;
         }
         .nav-item.active { color: #667eea; }
         .dark .nav-item { color: #6b7280; }
@@ -203,9 +203,6 @@
         <div id="insightsCard" class="card rounded-2xl shadow-xl p-6 mb-6 hidden">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold text-gray-800">סטטיסטיקות</h2>
-                <button onclick="openYearlyStats()" class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-purple-600 hover:to-indigo-600 transition-all">
-                    📊 נתונים שנתיים
-                </button>
             </div>
             <div id="insightsContent" class="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 items-start"></div>
         </div>
@@ -296,10 +293,10 @@
 
     <!-- Bottom Navigation (mobile only) -->
     <nav class="bottom-nav">
-        <button class="nav-item" onclick="window.location='portfolio.html'">
+        <a class="nav-item" href="portfolio.html">
             <span class="nav-icon">💼</span>
             <span>תיק נכסים</span>
-        </button>
+        </a>
         <button class="nav-item active" id="navHome">
             <span class="nav-icon">📊</span>
             <span>יתרות</span>
@@ -374,20 +371,10 @@
     <div id="yearlyStatsModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-2 md:p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div class="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-4 border-b">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📊 נתונים שנתיים</h3>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📊 דוח שנתי</h3>
                 <button onclick="closeYearlyStats()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">&times;</button>
             </div>
             <div id="yearlyStatsContent"></div>
-        </div>
-    </div>
-
-    <div id="annualReportsModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-6 sticky top-0 bg-white dark:bg-gray-800 pb-4 border-b z-10">
-                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">📊 דוחות כספיים שנתיים</h3>
-                <button onclick="closeAnnualReports()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">&times;</button>
-            </div>
-            <div id="annualReportsContent"></div>
         </div>
     </div>
 
@@ -1304,172 +1291,161 @@
             const yearlyData = {};
             sortedEntries.forEach(e => {
                 const year = e.month.split('-')[0];
-                if (!yearlyData[year]) {
-                    yearlyData[year] = [];
-                }
+                if (!yearlyData[year]) yearlyData[year] = [];
                 yearlyData[year].push(e);
             });
 
+            // years[0] = newest, years[idx+1] = prior year
             const years = Object.keys(yearlyData).sort().reverse();
             let html = '';
 
-            // Create stats for each year
             years.forEach((year, idx) => {
-                const yearEntries = yearlyData[year]; // Already sorted
+                const yearEntries = yearlyData[year];
                 const amounts = yearEntries.map(e => e.amount);
-
-                // Monthly average balance for the year
-                const avgBalance = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-
-                // Get the first and last amount of this year
                 const firstAmount = amounts[0];
                 const lastAmount = amounts[amounts.length - 1];
-
-                // Calculate yearly savings: January to December (first to last entry of the year)
                 const yearlySavings = lastAmount - firstAmount;
+                const growthPct = firstAmount > 0 ? ((yearlySavings / firstAmount) * 100).toFixed(1) : 0;
 
-                // Calculate all month-to-month changes within this year only
-                let monthlyChanges = [];
+                // Month-to-month changes within year
+                const monthlyChanges = [];
                 for (let i = 1; i < yearEntries.length; i++) {
-                    const change = amounts[i] - amounts[i-1];
-                    monthlyChanges.push({ month: yearEntries[i].month, change });
+                    monthlyChanges.push({ month: yearEntries[i].month, change: amounts[i] - amounts[i-1] });
                 }
 
-                // Calculate average monthly savings (only within the year)
-                const avgMonthlySavings = monthlyChanges.length > 0
-                    ? monthlyChanges.reduce((sum, c) => sum + c.change, 0) / monthlyChanges.length
-                    : 0;
-
-                // Best and worst months
                 let bestMonth = null, worstMonth = null;
                 monthlyChanges.forEach(c => {
-                    if (!bestMonth || c.change > bestMonth.change) {
-                        bestMonth = { month: c.month, change: c.change };
-                    }
-                    if (!worstMonth || c.change < worstMonth.change) {
-                        worstMonth = { month: c.month, change: c.change };
-                    }
+                    if (!bestMonth || c.change > bestMonth.change) bestMonth = c;
+                    if (!worstMonth || c.change < worstMonth.change) worstMonth = c;
                 });
 
-                // Year over year comparison - compare to previous year's savings
-                let yoyChange = '';
-                if (idx > 0 && firstAmount > 0) {
-                    const growthPct = ((yearlySavings / firstAmount) * 100).toFixed(1);
-                    const cls = yearlySavings >= 0 ? 'text-green-600' : 'text-red-600';
-                    yoyChange = `<div class="mt-2 text-sm ${cls}">צמיחה: ${growthPct}%</div>`;
-                } else if (firstAmount > 0) {
-                    const growthPct = ((yearlySavings / firstAmount) * 100).toFixed(1);
-                    const cls = yearlySavings >= 0 ? 'text-green-600' : 'text-red-600';
-                    yoyChange = `<div class="mt-2 text-sm ${cls}">צמיחה: ${growthPct}%</div>`;
+                // YoY comparison: prior year = years[idx+1]
+                let yoyHtml = '';
+                if (idx + 1 < years.length) {
+                    const prevYear = years[idx + 1];
+                    const prevEntries = yearlyData[prevYear];
+                    const prevAmounts = prevEntries.map(e => e.amount);
+                    const prevSavings = prevAmounts[prevAmounts.length - 1] - prevAmounts[0];
+                    const savingsChange = yearlySavings - prevSavings;
+                    const savingsChangePct = prevSavings !== 0 ? ((savingsChange / Math.abs(prevSavings)) * 100).toFixed(1) : 0;
+                    const yoyCls = savingsChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+                    const yoyArrow = savingsChange >= 0 ? '▲' : '▼';
+                    yoyHtml = `
+                        <div class="mt-2 py-1.5 px-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs flex items-center gap-1.5">
+                            <span class="text-gray-500 dark:text-gray-400">vs ${prevYear}:</span>
+                            <span class="font-semibold ${yoyCls}">${yoyArrow} ${formatCompact(Math.abs(savingsChange))} (${savingsChangePct}%)</span>
+                        </div>`;
                 }
 
-                // Get monthly income for this year
+                // Monthly income for this year
                 const yearMonthlyIncome = monthlyIncome[year] || [];
                 const totalMonthlyIncome = yearMonthlyIncome.reduce((sum, item) => sum + (item.amount || 0), 0);
 
                 html += `
-                    <div class="mb-5 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
-                        <h4 class="text-lg font-bold text-purple-600 dark:text-purple-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">${year}</h4>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">חיסכון שנתי כולל</div>
-                                <div class="text-base font-bold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${yearlySavings >= 0 ? '+' : ''}${formatCurrency(yearlySavings)}</div>
-                                ${yoyChange}
+                    <div class="mb-4 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600">
+                        <!-- Colored header band -->
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base font-bold">${year}</span>
+                                <span class="text-xs opacity-75">${yearEntries.length} חודשים</span>
                             </div>
-                            <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm">
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
-                                <div class="text-base font-bold ${avgMonthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${avgMonthlySavings >= 0 ? '+' : ''}${formatCurrency(avgMonthlySavings)}</div>
-                                <div class="text-xs text-gray-400 mt-0.5">${yearEntries.length} חודשים</div>
+                            <div class="text-left">
+                                <div class="text-sm font-bold">${formatCompact(yearlySavings >= 0 ? yearlySavings : -yearlySavings) /* show with sign below */}</div>
+                                <div class="text-xs opacity-80">${yearlySavings >= 0 ? '+' : '-'}${formatCompact(Math.abs(yearlySavings))} · ${growthPct >= 0 ? '+' : ''}${growthPct}%</div>
                             </div>
                         </div>
-                        ${bestMonth && worstMonth ? `
-                        <div class="grid grid-cols-2 gap-2 mt-2">
-                            <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
-                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי טוב</div>
-                                <div class="font-bold text-green-700 dark:text-green-400 text-sm">${formatMonth(bestMonth.month)}</div>
-                                <div class="text-sm text-green-600 dark:text-green-500">+${formatCurrency(bestMonth.change)}</div>
-                            </div>
-                            <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-lg">
-                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי חלש</div>
-                                <div class="font-bold text-red-700 dark:text-red-400 text-sm">${formatMonth(worstMonth.month)}</div>
-                                <div class="text-sm text-red-600 dark:text-red-500">${formatCurrency(worstMonth.change)}</div>
-                            </div>
-                        </div>
-                        ` : ''}
 
-                        <!-- Monthly Income Section -->
-                        <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                            <div class="flex justify-between items-center mb-2">
-                                <div class="text-sm font-semibold text-yellow-800 dark:text-yellow-300">📅 הכנסות קבועות</div>
-                                <div class="text-sm font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome)}/חודש</div>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 space-y-2">
+                            <!-- 2-col grid: opening/closing/best/worst -->
+                            <div class="grid grid-cols-2 gap-2 items-start">
+                                <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">יתרת פתיחה</div>
+                                    <div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatCompact(firstAmount)}</div>
+                                </div>
+                                <div class="bg-white dark:bg-gray-800 p-2 rounded-lg">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">יתרת סגירה</div>
+                                    <div class="text-sm font-bold text-gray-700 dark:text-gray-200">${formatCompact(lastAmount)}</div>
+                                </div>
+                                ${bestMonth ? `
+                                <div class="bg-green-50 dark:bg-green-900/25 p-2 rounded-lg">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">חודש הכי טוב</div>
+                                    <div class="text-xs font-bold text-green-700 dark:text-green-400">${formatMonth(bestMonth.month)}</div>
+                                    <div class="text-xs text-green-600 dark:text-green-500">+${formatCompact(bestMonth.change)}</div>
+                                </div>
+                                <div class="bg-red-50 dark:bg-red-900/25 p-2 rounded-lg">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">חודש הכי חלש</div>
+                                    <div class="text-xs font-bold text-red-700 dark:text-red-400">${formatMonth(worstMonth.month)}</div>
+                                    <div class="text-xs text-red-600 dark:text-red-500">${formatCompact(worstMonth.change)}</div>
+                                </div>` : ''}
                             </div>
-                            <div id="monthlyIncome-${year}" class="space-y-1.5">
-                                ${yearMonthlyIncome.map(item => `
-                                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded text-sm">
-                                        <span class="flex items-center gap-1.5 min-w-0">
-                                            <span class="px-1.5 py-0.5 rounded text-xs ${getTypeColor(item.type)} shrink-0">${item.type}</span>
-                                            <span class="truncate text-gray-700 dark:text-gray-300">${esc(item.description)}</span>
-                                        </span>
-                                        <span class="flex items-center gap-1.5 shrink-0 mr-2">
-                                            <span class="font-semibold text-gray-800 dark:text-white">${formatCurrency(item.amount)}</span>
-                                            <button onclick="deleteMonthlyIncomeItem('${year}', ${item.id})" class="text-red-500 hover:text-red-700 text-base leading-none">×</button>
-                                        </span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div class="mt-2 grid grid-cols-2 gap-1.5">
-                                <input type="text" id="incomeDesc-${year}" placeholder="תיאור" class="col-span-2 px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
-                                <input type="number" id="incomeAmount-${year}" placeholder="סכום ₪" inputmode="decimal" class="px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
-                                <select id="incomeType-${year}" class="px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
-                                    <option value="משכורת">משכורת</option>
-                                    <option value="שכר דירה">שכר דירה</option>
-                                    <option value="הוראת קבע">הוראת קבע</option>
-                                    <option value="אחר">אחר</option>
-                                </select>
-                                <button onclick="addMonthlyIncomeItem('${year}')" class="col-span-2 py-2 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 font-medium">+ הוסף</button>
+
+                            ${yoyHtml}
+
+                            <!-- Monthly Income Section -->
+                            <div class="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="text-xs font-semibold text-yellow-800 dark:text-yellow-300">📅 הכנסות קבועות</div>
+                                    <div class="text-xs font-bold text-yellow-700 dark:text-yellow-400">${formatCompact(totalMonthlyIncome)}/חודש</div>
+                                </div>
+                                <div id="monthlyIncome-${year}" class="space-y-1.5">
+                                    ${yearMonthlyIncome.map(item => `
+                                        <div class="flex justify-between items-center bg-white dark:bg-gray-800 p-2 rounded text-xs">
+                                            <span class="flex items-center gap-1.5 min-w-0">
+                                                <span class="px-1.5 py-0.5 rounded text-xs ${getTypeColor(item.type)} shrink-0">${item.type}</span>
+                                                <span class="truncate text-gray-700 dark:text-gray-300">${esc(item.description)}</span>
+                                            </span>
+                                            <span class="flex items-center gap-1.5 shrink-0 mr-2">
+                                                <span class="font-semibold text-gray-800 dark:text-white">${formatCompact(item.amount)}</span>
+                                                <button onclick="deleteMonthlyIncomeItem('${year.replace(/\D/g, '')}', ${item.id})" class="text-red-500 hover:text-red-700 text-base leading-none">×</button>
+                                            </span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="mt-2 grid grid-cols-2 gap-1.5">
+                                    <input type="text" id="incomeDesc-${year}" placeholder="תיאור" class="col-span-2 px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                                    <input type="number" id="incomeAmount-${year}" placeholder="סכום ₪" inputmode="decimal" class="px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                                    <select id="incomeType-${year}" class="px-2 py-2 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                                        <option value="משכורת">משכורת</option>
+                                        <option value="שכר דירה">שכר דירה</option>
+                                        <option value="הוראת קבע">הוראת קבע</option>
+                                        <option value="אחר">אחר</option>
+                                    </select>
+                                    <button onclick="addMonthlyIncomeItem('${year}')" class="col-span-2 py-2 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 font-medium">+ הוסף</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
             });
 
-            // Add total summary using sorted entries
+            // Overall summary card at top (purple gradient)
             const firstEntry = sortedEntries[0];
             const lastEntry = sortedEntries[sortedEntries.length - 1];
             const totalSavings = lastEntry.amount - firstEntry.amount;
-
-            // Calculate total number of month-to-month changes
             const totalMonths = sortedEntries.length - 1;
             const totalAvgMonthly = totalMonths > 0 ? totalSavings / totalMonths : 0;
-
-            // Calculate time period
-            const startDate = new Date(firstEntry.month + '-01');
-            const endDate = new Date(lastEntry.month + '-01');
-            const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
-
             const totalGrowthPct = firstEntry.amount > 0 ? ((totalSavings / firstEntry.amount) * 100).toFixed(1) : 0;
 
             html = `
-                <div class="mb-4 p-3 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 rounded-xl border border-purple-200 dark:border-purple-700">
-                    <h4 class="text-lg font-bold text-purple-700 dark:text-purple-300 mb-1">📈 סיכום כללי</h4>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">${formatMonth(firstEntry.month)} עד ${formatMonth(lastEntry.month)} · ${monthsDiff} חודשים</p>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה התחלתית</div>
-                            <div class="text-sm font-bold text-gray-700 dark:text-gray-300">${formatCurrency(firstEntry.amount)}</div>
+                <div class="mb-4 rounded-2xl overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3">
+                    <div class="text-sm font-bold mb-2 opacity-90">📈 סיכום כללי</div>
+                    <div class="grid grid-cols-2 gap-2 items-start">
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <div class="text-xs opacity-75 mb-0.5">יתרה התחלתית</div>
+                            <div class="text-sm font-bold">${formatCompact(firstEntry.amount)}</div>
                         </div>
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה נוכחית</div>
-                            <div class="text-sm font-bold text-gray-700 dark:text-gray-300">${formatCurrency(lastEntry.amount)}</div>
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <div class="text-xs opacity-75 mb-0.5">יתרה נוכחית</div>
+                            <div class="text-sm font-bold">${formatCompact(lastEntry.amount)}</div>
                         </div>
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">סה"כ שינוי</div>
-                            <div class="text-sm font-bold ${totalSavings >= 0 ? 'text-green-600' : 'text-red-600'}">${totalSavings >= 0 ? '+' : ''}${formatCurrency(totalSavings)}</div>
-                            <div class="text-xs ${totalSavings >= 0 ? 'text-green-500' : 'text-red-500'}">(${totalGrowthPct}%)</div>
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <div class="text-xs opacity-75 mb-0.5">סה"כ צמיחה</div>
+                            <div class="text-sm font-bold">${totalSavings >= 0 ? '+' : ''}${formatCompact(totalSavings)}</div>
+                            <div class="text-xs opacity-75">${totalGrowthPct}%</div>
                         </div>
-                        <div class="bg-white/80 dark:bg-gray-800/80 p-3 rounded-lg">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
-                            <div class="text-sm font-bold ${totalAvgMonthly >= 0 ? 'text-green-600' : 'text-red-600'}">${totalAvgMonthly >= 0 ? '+' : ''}${formatCurrency(totalAvgMonthly)}</div>
+                        <div class="bg-white/20 p-2 rounded-lg">
+                            <div class="text-xs opacity-75 mb-0.5">ממוצע חודשי</div>
+                            <div class="text-sm font-bold">${totalAvgMonthly >= 0 ? '+' : ''}${formatCompact(totalAvgMonthly)}</div>
                         </div>
                     </div>
                 </div>
@@ -1522,249 +1498,9 @@
             }
         }
 
-        // Annual Reports Functions
-        function openAnnualReports() {
-            const modal = document.getElementById('annualReportsModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            renderAnnualReports();
-        }
-
-        function closeAnnualReports() {
-            const modal = document.getElementById('annualReportsModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        document.getElementById('annualReportsModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('annualReportsModal')) {
-                closeAnnualReports();
-            }
-        });
-
-        function renderAnnualReports() {
-            if (entries.length < 2) {
-                document.getElementById('annualReportsContent').innerHTML = '<p class="text-gray-400 text-center py-8">צריך לפחות 2 רשומות כדי ליצור דוחות</p>';
-                return;
-            }
-
-            const sortedEntries = [...entries].sort((a, b) => a.month.localeCompare(b.month));
-
-            // Group by year
-            const yearlyData = {};
-            sortedEntries.forEach(e => {
-                const year = e.month.split('-')[0];
-                if (!yearlyData[year]) yearlyData[year] = [];
-                yearlyData[year].push(e);
-            });
-
-            const years = Object.keys(yearlyData).sort().reverse();
-            let html = '';
-
-            // Generate report for each year (starting from the second year for comparison)
-            years.forEach((year, idx) => {
-                const yearEntries = yearlyData[year];
-                const amounts = yearEntries.map(e => e.amount);
-                const firstAmount = amounts[0];
-                const lastAmount = amounts[amounts.length - 1];
-                const yearlySavings = lastAmount - firstAmount;
-
-                // Get monthly income data
-                const yearMonthlyIncome = monthlyIncome[year] || [];
-                const totalMonthlyIncome = yearMonthlyIncome.reduce((sum, item) => sum + (item.amount || 0), 0);
-
-                // Previous year data for comparison
-                let prevYearData = null;
-                let prevYearMonthlyIncome = 0;
-                let savingsChange = null;
-                let savingsChangePct = null;
-                let incomeChange = null;
-                let incomeChangePct = null;
-
-                if (idx > 0) {
-                    const prevYear = years[idx - 1];
-                    const prevEntries = yearlyData[prevYear];
-                    const prevAmounts = prevEntries.map(e => e.amount);
-                    const prevFirstAmount = prevAmounts[0];
-                    const prevLastAmount = prevAmounts[prevAmounts.length - 1];
-                    const prevYearlySavings = prevLastAmount - prevFirstAmount;
-
-                    prevYearData = {
-                        savings: prevYearlySavings,
-                        endBalance: prevLastAmount
-                    };
-
-                    // Savings comparison
-                    savingsChange = yearlySavings - prevYearlySavings;
-                    savingsChangePct = prevYearlySavings !== 0 ? ((savingsChange / Math.abs(prevYearlySavings)) * 100).toFixed(1) : 0;
-
-                    // Income comparison
-                    const prevYearIncomeData = monthlyIncome[prevYear] || [];
-                    prevYearMonthlyIncome = prevYearIncomeData.reduce((sum, item) => sum + (item.amount || 0), 0);
-                    if (prevYearMonthlyIncome > 0 && totalMonthlyIncome > 0) {
-                        incomeChange = totalMonthlyIncome - prevYearMonthlyIncome;
-                        incomeChangePct = ((incomeChange / prevYearMonthlyIncome) * 100).toFixed(1);
-                    }
-                }
-
-                // Calculate monthly stats
-                let monthlyChanges = [];
-                for (let i = 1; i < yearEntries.length; i++) {
-                    monthlyChanges.push(amounts[i] - amounts[i-1]);
-                }
-                const avgMonthlySavings = monthlyChanges.length > 0
-                    ? monthlyChanges.reduce((a, b) => a + b, 0) / monthlyChanges.length
-                    : 0;
-
-                // Best and worst months
-                let bestMonthIdx = 0, worstMonthIdx = 0;
-                monthlyChanges.forEach((change, i) => {
-                    if (change > monthlyChanges[bestMonthIdx]) bestMonthIdx = i;
-                    if (change < monthlyChanges[worstMonthIdx]) worstMonthIdx = i;
-                });
-
-                // Growth percentage
-                const growthPct = firstAmount > 0 ? ((yearlySavings / firstAmount) * 100).toFixed(1) : 0;
-
-                html += `
-                    <div class="mb-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-600 overflow-hidden">
-                        <!-- Report Header -->
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
-                            <div class="flex justify-between items-center">
-                                <h4 class="text-2xl font-bold">דוח שנתי ${year}</h4>
-                                <span class="text-lg opacity-80">${yearEntries.length} חודשים</span>
-                            </div>
-                        </div>
-
-                        <div class="p-5">
-                            <!-- Main Metrics -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה פתיחה</div>
-                                    <div class="text-xl font-bold text-gray-800 dark:text-white">${formatCurrency(firstAmount)}</div>
-                                </div>
-                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">יתרה סגירה</div>
-                                    <div class="text-xl font-bold text-gray-800 dark:text-white">${formatCurrency(lastAmount)}</div>
-                                </div>
-                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">חיסכון שנתי</div>
-                                    <div class="text-xl font-bold ${yearlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${yearlySavings >= 0 ? '+' : ''}${formatCurrency(yearlySavings)}</div>
-                                    <div class="text-xs ${yearlySavings >= 0 ? 'text-green-500' : 'text-red-500'}">(${growthPct}%)</div>
-                                </div>
-                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">ממוצע חודשי</div>
-                                    <div class="text-xl font-bold ${avgMonthlySavings >= 0 ? 'text-green-600' : 'text-red-600'}">${avgMonthlySavings >= 0 ? '+' : ''}${formatCurrency(avgMonthlySavings)}</div>
-                                </div>
-                            </div>
-
-                            ${prevYearData ? `
-                            <!-- Year over Year Comparison -->
-                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
-                                <h5 class="font-semibold text-blue-800 dark:text-blue-300 mb-3">📈 השוואה לשנת ${years[idx-1]}</h5>
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">שינוי בחיסכון השנתי</div>
-                                        <div class="text-lg font-bold ${savingsChange >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                            ${savingsChange >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(savingsChange))}
-                                        </div>
-                                        <div class="text-sm ${savingsChange >= 0 ? 'text-green-500' : 'text-red-500'}">(${savingsChangePct}%)</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">חיסכון ${years[idx-1]}</div>
-                                        <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(prevYearData.savings)}</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">חיסכון ${year}</div>
-                                        <div class="text-lg font-bold text-gray-700 dark:text-gray-300">${formatCurrency(yearlySavings)}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            ` : ''}
-
-                            ${totalMonthlyIncome > 0 ? `
-                            <!-- Monthly Income Section -->
-                            <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 mb-6">
-                                <h5 class="font-semibold text-yellow-800 dark:text-yellow-300 mb-3">💰 הכנסות חודשיות קבועות</h5>
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">סה"כ הכנסה חודשית</div>
-                                        <div class="text-xl font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome)}</div>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">הכנסה שנתית צפויה</div>
-                                        <div class="text-xl font-bold text-yellow-700 dark:text-yellow-400">${formatCurrency(totalMonthlyIncome * 12)}</div>
-                                    </div>
-                                    ${incomeChange !== null ? `
-                                    <div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">שינוי מהשנה הקודמת</div>
-                                        <div class="text-lg font-bold ${incomeChange >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                            ${incomeChange >= 0 ? '▲' : '▼'} ${formatCurrency(Math.abs(incomeChange))} (${incomeChangePct}%)
-                                        </div>
-                                    </div>
-                                    ` : ''}
-                                </div>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    ${yearMonthlyIncome.map(item => `
-                                        <span class="px-3 py-1 rounded-full text-sm ${getTypeColor(item.type)}">${esc(item.description)}: ${formatCurrency(item.amount)}</span>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            ` : ''}
-
-                            ${monthlyChanges.length > 0 ? `
-                            <!-- Best/Worst Months -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
-                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי טוב</div>
-                                    <div class="font-bold text-green-700 dark:text-green-400">${formatMonth(yearEntries[bestMonthIdx + 1]?.month || yearEntries[bestMonthIdx].month)}</div>
-                                    <div class="text-lg text-green-600">+${formatCurrency(monthlyChanges[bestMonthIdx])}</div>
-                                </div>
-                                <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4">
-                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">החודש הכי חלש</div>
-                                    <div class="font-bold text-red-700 dark:text-red-400">${formatMonth(yearEntries[worstMonthIdx + 1]?.month || yearEntries[worstMonthIdx].month)}</div>
-                                    <div class="text-lg text-red-600">${formatCurrency(monthlyChanges[worstMonthIdx])}</div>
-                                </div>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Add overall summary at the top
-            const firstEntry = sortedEntries[0];
-            const lastEntry = sortedEntries[sortedEntries.length - 1];
-            const totalSavings = lastEntry.amount - firstEntry.amount;
-            const totalYears = years.length;
-            const avgYearlySavings = totalYears > 0 ? totalSavings / totalYears : 0;
-
-            const summaryHtml = `
-                <div class="mb-8 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
-                    <h4 class="text-xl font-bold mb-4">📊 סיכום כל השנים</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-white/20 rounded-xl p-4">
-                            <div class="text-sm opacity-80">תקופת מעקב</div>
-                            <div class="text-2xl font-bold">${totalYears} שנים</div>
-                        </div>
-                        <div class="bg-white/20 rounded-xl p-4">
-                            <div class="text-sm opacity-80">סה"כ חיסכון</div>
-                            <div class="text-2xl font-bold">${formatCurrency(totalSavings)}</div>
-                        </div>
-                        <div class="bg-white/20 rounded-xl p-4">
-                            <div class="text-sm opacity-80">ממוצע שנתי</div>
-                            <div class="text-2xl font-bold">${formatCurrency(avgYearlySavings)}</div>
-                        </div>
-                        <div class="bg-white/20 rounded-xl p-4">
-                            <div class="text-sm opacity-80">צמיחה כוללת</div>
-                            <div class="text-2xl font-bold">${firstEntry.amount > 0 ? ((totalSavings / firstEntry.amount) * 100).toFixed(1) : 0}%</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('annualReportsContent').innerHTML = summaryHtml + html;
-        }
+        // Annual Reports — alias to unified modal
+        function openAnnualReports() { openYearlyStats(); }
+        function closeAnnualReports() { closeYearlyStats(); }
 
         window.openYearlyStats = openYearlyStats;
         window.closeYearlyStats = closeYearlyStats;
@@ -1822,8 +1558,34 @@
                         ? `הקובץ מכיל ${data.balanceEntries.length} רשומות יתרה.\nהחלפה תמחק ${existing.length} רשומות קיימות. להמשיך?`
                         : 'הקובץ מכיל נתוני תיק נכסים בלבד. להמשיך?';
                     if (!confirm(msg)) return;
-                    if (hasEntries) localStorage.setItem('balanceEntries', JSON.stringify(data.balanceEntries));
-                    if (data.monthlyIncomeByYear) localStorage.setItem('monthlyIncomeByYear', JSON.stringify(data.monthlyIncomeByYear));
+                    if (hasEntries) {
+                        const sanitized = data.balanceEntries
+                            .filter(e => e && /^\d{4}-\d{2}$/.test(e.month) && isFinite(Number(e.amount)))
+                            .map(e => ({
+                                id: typeof e.id === 'number' && isFinite(e.id) ? e.id : Date.now(),
+                                month: e.month,
+                                amount: Number(e.amount),
+                                note: String(e.note || '').slice(0, 300)
+                            }));
+                        localStorage.setItem('balanceEntries', JSON.stringify(sanitized));
+                    }
+                    if (data.monthlyIncomeByYear && typeof data.monthlyIncomeByYear === 'object' && !Array.isArray(data.monthlyIncomeByYear)) {
+                        const validTypes = ['משכורת', 'שכר דירה', 'הוראת קבע', 'אחר'];
+                        const sanitizedIncome = {};
+                        Object.entries(data.monthlyIncomeByYear).forEach(([yr, items]) => {
+                            if (/^\d{4}$/.test(yr) && Array.isArray(items)) {
+                                sanitizedIncome[yr] = items
+                                    .filter(item => item && isFinite(Number(item.amount)))
+                                    .map(item => ({
+                                        id: typeof item.id === 'number' ? item.id : Date.now(),
+                                        description: String(item.description || '').slice(0, 200),
+                                        amount: Number(item.amount),
+                                        type: validTypes.includes(item.type) ? item.type : 'אחר'
+                                    }));
+                            }
+                        });
+                        localStorage.setItem('monthlyIncomeByYear', JSON.stringify(sanitizedIncome));
+                    }
                     if (data.portfolioData) localStorage.setItem('portfolioData', JSON.stringify(data.portfolioData));
                     if (data.loveDashboardData) localStorage.setItem('loveDashboardData', JSON.stringify(data.loveDashboardData));
                     if (data.darkMode != null) localStorage.setItem('darkMode', data.darkMode);
@@ -1856,7 +1618,8 @@
     </script>
     <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
+        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' })
+            .catch(err => console.warn('[SW] registration failed:', err));
         // Auto-reload when a new service worker activates
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data && event.data.type === 'SW_UPDATED') {

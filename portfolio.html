@@ -164,6 +164,16 @@
     </div>
 
     <script>
+        function esc(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // ==================== Data Management ====================
         const defaultData = {
             stocks: {
@@ -184,7 +194,9 @@
         function loadData() {
             const saved = localStorage.getItem('portfolioData');
             if (saved) {
-                const parsed = JSON.parse(saved);
+                let parsed;
+                try { parsed = JSON.parse(saved); }
+                catch (e) { console.warn('[portfolio] localStorage parse error', e); return { ...defaultData }; }
                 // Merge with defaults to handle new fields
                 const merged = { ...defaultData, ...parsed };
 
@@ -486,7 +498,7 @@
                 total += c.value || 0;
                 return `
                     <tr class="border-b">
-                        <td class="py-2 font-semibold">${c.coin}</td>
+                        <td class="py-2 font-semibold">${esc(c.coin)}</td>
                         <td class="py-2">${c.quantity}</td>
                         <td class="py-2">${formatCurrency(c.value)}</td>
                         <td class="py-2"><button onclick="deleteCrypto(${c.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
@@ -555,7 +567,7 @@
                 totalRental += r.rentalIncome || 0;
                 return `
                     <tr class="border-b">
-                        <td class="py-2">${r.address}</td>
+                        <td class="py-2">${esc(r.address)}</td>
                         <td class="py-2">${formatCurrency(r.value)}</td>
                         <td class="py-2">${formatCurrency(r.rentalIncome)}/חודש</td>
                         <td class="py-2"><button onclick="deleteRealEstate(${r.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
@@ -719,7 +731,7 @@
                 const colorClass = typeColors[m.type] || typeColors['אחר'];
                 return `
                     <tr class="border-b">
-                        <td class="py-2">${m.description}</td>
+                        <td class="py-2">${esc(m.description)}</td>
                         <td class="py-2">${formatCurrency(m.amount)}</td>
                         <td class="py-2"><span class="px-2 py-1 rounded-full text-xs ${colorClass}">${m.type}</span></td>
                         <td class="py-2"><button onclick="deleteMonthly(${m.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
@@ -787,9 +799,9 @@
                 total += s.amount || 0;
                 return `
                     <tr class="border-b">
-                        <td class="py-2">${s.accountName}</td>
+                        <td class="py-2">${esc(s.accountName)}</td>
                         <td class="py-2">${formatCurrency(s.amount)}</td>
-                        <td class="py-2">${s.bank}</td>
+                        <td class="py-2">${esc(s.bank)}</td>
                         <td class="py-2"><button onclick="deleteSavings(${s.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
                     </tr>
                 `;
@@ -871,7 +883,7 @@
                 const colorClass = categoryColors[p.category] || categoryColors['אחר'];
                 return `
                     <tr class="border-b">
-                        <td class="py-2">${p.name}</td>
+                        <td class="py-2">${esc(p.name)}</td>
                         <td class="py-2">${formatCurrency(p.value)}</td>
                         <td class="py-2"><span class="px-2 py-1 rounded-full text-xs ${colorClass}">${p.category}</span></td>
                         <td class="py-2"><button onclick="deletePhysical(${p.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
@@ -942,7 +954,7 @@
                 return `
                     <tr class="border-b">
                         <td class="py-2">${formatCurrency(d.amount)}</td>
-                        <td class="py-2">${d.recipient}</td>
+                        <td class="py-2">${esc(d.recipient)}</td>
                         <td class="py-2">${dateStr}</td>
                         <td class="py-2"><button onclick="deleteDonation(${d.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
                     </tr>
@@ -1010,7 +1022,7 @@
                 const dateStr = o.date ? new Date(o.date).toLocaleDateString('he-IL') : '-';
                 return `
                     <tr class="border-b">
-                        <td class="py-2">${o.description}</td>
+                        <td class="py-2">${esc(o.description)}</td>
                         <td class="py-2">${formatCurrency(o.amount)}</td>
                         <td class="py-2">${dateStr}</td>
                         <td class="py-2"><button onclick="deleteOther(${o.id})" class="text-red-500 hover:text-red-700">🗑️</button></td>
