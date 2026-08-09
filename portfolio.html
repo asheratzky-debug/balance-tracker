@@ -549,8 +549,8 @@
             return `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <input type="text" id="re-address" placeholder="כתובת" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
-                    <input type="number" id="re-value" placeholder="שווי נכס" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
-                    <input type="number" id="re-rental" placeholder="הכנסה משכירות (חודשי)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="text" inputmode="decimal" id="re-value" placeholder="שווי נכס" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
+                    <input type="text" inputmode="decimal" id="re-rental" placeholder="הכנסה משכירות (חודשי)" class="px-3 py-2 border-2 border-gray-200 rounded-xl">
                 </div>
                 <button onclick="addRealEstate()" class="bg-emerald-500 text-white px-4 py-2 rounded-xl hover:bg-emerald-600 transition mb-4">הוסף נכס</button>
                 <div id="re-table">${renderRealEstateTable()}</div>
@@ -595,8 +595,8 @@
 
         function addRealEstate() {
             const address = document.getElementById('re-address').value;
-            const value = parseFloat(document.getElementById('re-value').value);
-            const rentalIncome = parseFloat(document.getElementById('re-rental').value);
+            const value = parseAmt('re-value');
+            const rentalIncome = parseAmt('re-rental');
 
             if (!address) return alert('נא למלא כתובת');
 
